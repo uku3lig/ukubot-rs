@@ -1,3 +1,5 @@
+mod handler;
+
 use serenity::client::{Context, EventHandler};
 use serenity::framework::StandardFramework;
 use serenity::model::channel::Message;
@@ -11,12 +13,9 @@ struct Handler;
 #[serenity::async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, message: Message) {
-        if message.author.bot {
-            return;
-        }
-
-        if message.content.contains("miguel") {
-            message.reply(&ctx.http, "miguel :3").await.unwrap();
+        if let Err(e) = handler::message(&ctx, &message).await {
+            println!("An error occurred in message handler: {:?}", e);
+            let _ = message.reply(&ctx.http, "An error occurred").await;
         }
     }
 
