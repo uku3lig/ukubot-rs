@@ -1,14 +1,10 @@
-use serenity::client::bridge::gateway::ShardManager;
 use serenity::client::{Context, EventHandler};
 use serenity::framework::StandardFramework;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::prelude::GatewayIntents;
 use serenity::Client;
-
 use std::env;
-use std::sync::{Arc, OnceLock};
-use tokio::sync::Mutex;
 
 struct Handler;
 
@@ -22,19 +18,12 @@ impl EventHandler for Handler {
         if message.content.contains("miguel") {
             message.reply(&ctx.http, "miguel :3").await.unwrap();
         }
-
-        if message.content.contains("shutdown") {
-            message.reply(&ctx.http, "shutting down...").await.unwrap();
-            MANAGER.get().unwrap().lock().await.shutdown_all().await;
-        }
     }
 
     async fn ready(&self, _ctx: Context, data: Ready) {
         println!("{} is connected!", data.user.name);
     }
 }
-
-static MANAGER: OnceLock<Arc<Mutex<ShardManager>>> = OnceLock::new();
 
 #[tokio::main]
 async fn main() {
@@ -50,9 +39,16 @@ async fn main() {
         .await
         .expect("Could not create client");
 
-    MANAGER.set(client.shard_manager.clone()).unwrap();
+    let manager = client.shard_manager.clone();
 
-    if let Err(why) = client.start().await {
-        println!("An error occurred while running the client: {:?}", why);
+    tokio::spawn(async move {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Could not register ctrl+c handler");
+        manager.lock().await.shutdown_all().await;
+    });
+
+    if let Err(e) = client.start().await {
+        println!("An error occurred while running the client: {:?}", e);
     }
 }
