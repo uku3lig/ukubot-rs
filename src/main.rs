@@ -14,19 +14,20 @@ struct Handler;
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, message: Message) {
         if let Err(e) = handler::message(&ctx, &message).await {
-            println!("An error occurred in message handler: {:?}", e);
+            tracing::error!("An error occurred in message handler: {:?}", e);
             let _ = message.reply(&ctx.http, "An error occurred").await;
         }
     }
 
     async fn ready(&self, _ctx: Context, data: Ready) {
-        println!("{} is connected!", data.user.name);
+        tracing::info!("{} is connected!", data.user.name);
     }
 }
 
 #[tokio::main]
 async fn main() {
     let _ = dotenvy::dotenv();
+    tracing_subscriber::fmt::init();
 
     let token = env::var("UKUBOT_TOKEN").expect("Could not load token from UKUBOT_TOKEN");
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
@@ -48,6 +49,6 @@ async fn main() {
     });
 
     if let Err(e) = client.start().await {
-        println!("An error occurred while running the client: {:?}", e);
+        tracing::error!("An error occurred while running the client: {:?}", e);
     }
 }
