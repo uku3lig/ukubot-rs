@@ -5,16 +5,12 @@ use crate::command::{register_commands, PingCommand, UkubotCommand};
 use serenity::builder::CreateApplicationCommand;
 use serenity::client::{Context, EventHandler};
 use serenity::framework::StandardFramework;
-use serenity::model::application::command::Command;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::Interaction;
 use serenity::prelude::GatewayIntents;
 use serenity::Client;
 use std::env;
-use std::sync::OnceLock;
-
-static REGISTERED_COMMANDS: OnceLock<Vec<Command>> = OnceLock::new();
 
 struct Handler(Vec<&'static dyn UkubotCommand>);
 
@@ -28,13 +24,7 @@ impl EventHandler for Handler {
     }
 
     async fn ready(&self, ctx: Context, data: Ready) {
-        match register_commands(&ctx, &self.0).await {
-            Ok(c) => {
-                tracing::info!("Successfully registered {} commands", c.len());
-                REGISTERED_COMMANDS.set(c).expect("Could not set COMMANDS");
-            }
-            Err(e) => tracing::error!("An error occurred while registering commands: {:?}", e),
-        }
+        register_commands(&ctx, &self.0).await;
 
         tracing::info!("{} is connected!", data.user.name);
     }

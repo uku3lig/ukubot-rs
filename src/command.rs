@@ -20,11 +20,8 @@ pub trait UkubotCommand: Send + Sync {
     ) -> anyhow::Result<()>;
 }
 
-pub async fn register_commands(
-    ctx: &Context,
-    cmds: &Vec<&'static dyn UkubotCommand>,
-) -> serenity::Result<Vec<Command>> {
-    if let Ok(g) = env::var("GUILD_ID") {
+pub async fn register_commands(ctx: &Context, cmds: &Vec<&'static dyn UkubotCommand>) {
+    let commands = if let Ok(g) = env::var("GUILD_ID") {
         let guild_id = GuildId(g.parse().expect("Could not parse GUILD_ID"));
         GuildId::set_application_commands(&guild_id, &ctx.http, |c| {
             register_commands_internal(c, cmds)
@@ -33,6 +30,11 @@ pub async fn register_commands(
     } else {
         Command::set_global_application_commands(&ctx.http, |c| register_commands_internal(c, cmds))
             .await
+    };
+
+    match commands {
+        Ok(c) => tracing::info!("Successfully registered {} commands", c.len()),
+        Err(e) => tracing::error!("An error occurred while registering commands: {:?}", e),
     }
 }
 
