@@ -48,29 +48,3 @@ fn register_commands_internal<'a>(
 
     creator
 }
-
-pub struct PingCommand;
-
-#[serenity::async_trait]
-impl UkubotCommand for PingCommand {
-    fn register<'a>(
-        &self,
-        command: &'a mut CreateApplicationCommand,
-    ) -> &'a mut CreateApplicationCommand {
-        command.name("ping").description("Ping the bot")
-    }
-
-    async fn on_command(
-        &self,
-        ctx: &Context,
-        interaction: &ApplicationCommandInteraction,
-    ) -> anyhow::Result<()> {
-        interaction
-            .create_interaction_response(&ctx.http, |r| {
-                r.interaction_response_data(|d| d.content("Pong!"))
-            })
-            .await?;
-
-        Ok(())
-    }
-}

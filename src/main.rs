@@ -1,7 +1,10 @@
+mod bot;
 mod command;
 mod handler;
 
-use crate::command::{register_commands, PingCommand, UkubotCommand};
+use crate::bot::misc::*;
+use crate::command::{register_commands, UkubotCommand};
+use once_cell::sync::Lazy;
 use serenity::builder::CreateApplicationCommand;
 use serenity::client::{Context, EventHandler};
 use serenity::framework::StandardFramework;
@@ -48,6 +51,9 @@ impl EventHandler for Handler {
     }
 }
 
+static COMMANDS: Lazy<Vec<&'static dyn UkubotCommand>> =
+    Lazy::new(|| vec![&RatioCommand, &EchoCommand]);
+
 #[tokio::main]
 async fn main() {
     let _ = dotenvy::dotenv();
@@ -59,7 +65,7 @@ async fn main() {
 
     let mut client = Client::builder(token, intents)
         .framework(framework)
-        .event_handler(Handler(vec![&PingCommand]))
+        .event_handler(Handler(COMMANDS.clone()))
         .await
         .expect("Could not create client");
 
