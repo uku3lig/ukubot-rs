@@ -1,9 +1,5 @@
-mod bot;
-mod command;
-mod handler;
-mod config;
+use std::env;
 
-use crate::command::{register_commands, UkubotCommand};
 use serenity::builder::CreateApplicationCommand;
 use serenity::client::{Context, EventHandler};
 use serenity::framework::StandardFramework;
@@ -12,7 +8,13 @@ use serenity::model::gateway::Ready;
 use serenity::model::prelude::Interaction;
 use serenity::prelude::GatewayIntents;
 use serenity::Client;
-use std::env;
+
+use crate::command::{register_commands, UkubotCommand};
+
+mod bot;
+mod command;
+mod config;
+mod handler;
 
 struct Handler(&'static Vec<&'static dyn UkubotCommand>);
 
@@ -33,6 +35,11 @@ impl EventHandler for Handler {
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
+            // don't accept dm commands
+            if let None = command.guild_id {
+                return;
+            }
+
             tracing::info!("received command {}", command.data.name);
             for cmd in self.0 {
                 if command.data.name == get_cmd_name(cmd) {

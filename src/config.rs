@@ -1,7 +1,8 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serenity::model::id::{ChannelId, GuildId};
-use std::collections::HashMap;
 
 pub const CONFIG_FILE: &str = "ukubot_config.toml";
 
@@ -16,16 +17,26 @@ pub struct GuildConfig {
 }
 
 impl GuildConfig {
-    pub fn get<T: Into<GuildId>>(id: T) -> Result<Self> {
-        let conf = std::fs::read_to_string(CONFIG_FILE)?;
-        let conf: HashMap<GuildId, GuildConfig> = toml::from_str(&conf)?;
+    fn read() -> Result<HashMap<GuildId, GuildConfig>> {
+        let conf = match std::fs::read_to_string(CONFIG_FILE) {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::warn!("Could not read config file: {:?}", e);
+                anyhow::bail!(e);
+            }
+        };
 
-        Ok(conf.get(&id.into()).cloned().unwrap_or_default())
+        Ok(toml::from_str(&conf)?)
+    }
+
+    pub fn get<T: Into<GuildId>>(id: T) -> Self {
+        let conf = GuildConfig::read().unwrap_or(HashMap::new());
+
+        conf.get(&id.into()).cloned().unwrap_or_default()
     }
 
     pub fn save<T: Into<GuildId>>(&self, id: T) -> Result<()> {
-        let conf = std::fs::read_to_string(CONFIG_FILE)?;
-        let mut conf: HashMap<GuildId, GuildConfig> = toml::from_str(&conf)?;
+        let mut conf = GuildConfig::read().unwrap_or(HashMap::new());
         conf.insert(id.into(), self.clone());
 
         let conf = toml::to_string(&conf)?;
