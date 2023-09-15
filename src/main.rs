@@ -2,9 +2,7 @@ mod bot;
 mod command;
 mod handler;
 
-use crate::bot::misc::*;
 use crate::command::{register_commands, UkubotCommand};
-use once_cell::sync::Lazy;
 use serenity::builder::CreateApplicationCommand;
 use serenity::client::{Context, EventHandler};
 use serenity::framework::StandardFramework;
@@ -15,7 +13,7 @@ use serenity::prelude::GatewayIntents;
 use serenity::Client;
 use std::env;
 
-struct Handler(Vec<&'static dyn UkubotCommand>);
+struct Handler(&'static Vec<&'static dyn UkubotCommand>);
 
 #[serenity::async_trait]
 impl EventHandler for Handler {
@@ -27,7 +25,7 @@ impl EventHandler for Handler {
     }
 
     async fn ready(&self, ctx: Context, data: Ready) {
-        register_commands(&ctx, &self.0).await;
+        register_commands(&ctx, self.0).await;
 
         tracing::info!("{} is connected!", data.user.name);
     }
@@ -35,7 +33,7 @@ impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
             tracing::info!("received command {}", command.data.name);
-            for cmd in &self.0 {
+            for cmd in self.0 {
                 if command.data.name == get_cmd_name(cmd) {
                     if let Err(e) = cmd.on_command(&ctx, &command).await {
                         tracing::error!("An error occurred in command handler: {:?}", e);
@@ -51,9 +49,6 @@ impl EventHandler for Handler {
     }
 }
 
-static COMMANDS: Lazy<Vec<&'static dyn UkubotCommand>> =
-    Lazy::new(|| vec![&RatioCommand, &EchoCommand]);
-
 #[tokio::main]
 async fn main() {
     if let Err(e) = dotenvy::dotenv() {
@@ -68,7 +63,7 @@ async fn main() {
 
     let mut client = Client::builder(token, intents)
         .framework(framework)
-        .event_handler(Handler(COMMANDS.clone()))
+        .event_handler(Handler(&bot::COMMANDS))
         .await
         .expect("Could not create client");
 
