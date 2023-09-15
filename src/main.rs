@@ -1,6 +1,7 @@
 mod bot;
 mod command;
 mod handler;
+mod config;
 
 use crate::command::{register_commands, UkubotCommand};
 use serenity::builder::CreateApplicationCommand;
