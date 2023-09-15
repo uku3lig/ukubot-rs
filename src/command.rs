@@ -23,10 +23,9 @@ pub trait UkubotCommand: Send + Sync {
 pub async fn register_commands(ctx: &Context, cmds: &Vec<&'static dyn UkubotCommand>) {
     let commands = if let Ok(g) = env::var("GUILD_ID") {
         let guild_id = GuildId(g.parse().expect("Could not parse GUILD_ID"));
-        GuildId::set_application_commands(&guild_id, &ctx.http, |c| {
-            register_commands_internal(c, cmds)
-        })
-        .await
+        guild_id
+            .set_application_commands(&ctx.http, |c| register_commands_internal(c, cmds))
+            .await
     } else {
         Command::set_global_application_commands(&ctx.http, |c| register_commands_internal(c, cmds))
             .await

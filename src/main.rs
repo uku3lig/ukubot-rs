@@ -56,7 +56,10 @@ static COMMANDS: Lazy<Vec<&'static dyn UkubotCommand>> =
 
 #[tokio::main]
 async fn main() {
-    let _ = dotenvy::dotenv();
+    if let Err(e) = dotenvy::dotenv() {
+        eprintln!("An error occurred while loading .env: {:?}", e);
+    }
+
     tracing_subscriber::fmt::init();
 
     let token = env::var("UKUBOT_TOKEN").expect("Could not load token from UKUBOT_TOKEN");
