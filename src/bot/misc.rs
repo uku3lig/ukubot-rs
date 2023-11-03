@@ -1,4 +1,3 @@
-use crate::command::UkubotCommand;
 use anyhow::anyhow;
 use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
@@ -6,7 +5,13 @@ use serenity::builder::CreateApplicationCommand;
 use serenity::client::Context;
 use serenity::model::application::command::CommandOptionType;
 use serenity::model::application::interaction::application_command::ApplicationCommandInteraction;
+use serenity::model::channel::ChannelType;
+use serenity::model::id::ChannelId;
 use serenity::model::Permissions;
+
+use crate::command::UkubotCommand;
+use crate::config::GuildConfig;
+use crate::util::ParseSnowflake;
 
 pub struct RatioCommand;
 
@@ -92,4 +97,124 @@ impl UkubotCommand for EchoCommand {
 
         Ok(())
     }
+}
+
+pub struct ConfigCommand;
+
+#[serenity::async_trait]
+impl UkubotCommand for ConfigCommand {
+    fn register<'a>(
+        &self,
+        command: &'a mut CreateApplicationCommand,
+    ) -> &'a mut CreateApplicationCommand {
+        command
+            .name("config")
+            .description("configures the bot to your likings")
+            .create_option(|o| {
+                o.name("requests_open")
+                    .description("whether or not requests are open")
+                    .kind(CommandOptionType::Boolean)
+                    .required(false)
+            })
+            .create_option(|o| {
+                o.name("form_channel")
+                    .description("the channel where the form is sent")
+                    .kind(CommandOptionType::Channel)
+                    .required(false)
+            })
+            .create_option(|o| {
+                o.name("ticket_category")
+                    .description("the category where tickets are created")
+                    .kind(CommandOptionType::Channel)
+                    .required(false)
+            })
+            .create_option(|o| {
+                o.name("closed_category")
+                    .description("the category where closed tickets are moved")
+                    .kind(CommandOptionType::Channel)
+                    .required(false)
+            })
+            .create_option(|o| {
+                o.name("finished_channel")
+                    .description("the channel where finished tickets are sent")
+                    .kind(CommandOptionType::Channel)
+                    .required(false)
+            })
+            .default_member_permissions(Permissions::ADMINISTRATOR)
+    }
+
+    async fn on_command(
+        &self,
+        ctx: &Context,
+        interaction: &ApplicationCommandInteraction,
+    ) -> anyhow::Result<()> {
+        let invalid = parse_config(interaction);
+        let message = if invalid.is_empty() {
+            "Config updated successfully".into()
+        } else {
+            format!("Invalid parameters: {}", invalid.join(", "))
+        };
+
+        interaction
+            .create_interaction_response(&ctx.http, |r| {
+                r.interaction_response_data(|d| d.content(message).ephemeral(true))
+            })
+            .await?;
+
+        Ok(())
+    }
+}
+
+fn parse_config(interaction: &ApplicationCommandInteraction) -> Vec<String> {
+    let mut config = GuildConfig::get(interaction.guild_id.unwrap());
+    let mut invalid = Vec::new();
+
+    for opt in &interaction.data.options {
+        match opt.name.as_str() {
+            "requests_open" => {
+                config.requests_open = opt.value.as_ref().unwrap().as_bool().unwrap_or_default();
+            }
+            "form_channel" => {
+                let id = ChannelId(opt.value.parse_snowflake().unwrap_or(0));
+
+                match interaction.data.resolved.channels.get(&id) {
+                    Some(c) if c.kind == ChannelType::Text => config.form_channel = id,
+                    _ => invalid.push(opt.name.clone()),
+                }
+            }
+            "ticket_category" => {
+                let id = ChannelId(opt.value.parse_snowflake().unwrap_or(0));
+
+                match interaction.data.resolved.channels.get(&id) {
+                    Some(c) if c.kind == ChannelType::Category => config.ticket_category = id,
+                    _ => invalid.push(opt.name.clone()),
+                }
+            }
+            "closed_category" => {
+                let id = ChannelId(opt.value.parse_snowflake().unwrap_or(0));
+
+                match interaction.data.resolved.channels.get(&id) {
+                    Some(c) if c.kind == ChannelType::Category => config.closed_category = id,
+                    _ => invalid.push("closed_category".into()),
+                }
+            }
+            "finished_channel" => {
+                let id = ChannelId(opt.value.parse_snowflake().unwrap_or(0));
+
+                match interaction.data.resolved.channels.get(&id) {
+                    Some(c) if c.kind == ChannelType::Text => config.finished_channel = id,
+                    _ => invalid.push("finished_channel".into()),
+                }
+            }
+            _ => {}
+        }
+    }
+
+    if invalid.is_empty() {
+        if let Err(e) = config.save(interaction.guild_id.unwrap()) {
+            tracing::error!("An error occurred while saving config: {:?}", e);
+        }
+    }
+
+    invalid
 }

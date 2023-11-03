@@ -15,6 +15,7 @@ mod bot;
 mod command;
 mod config;
 mod handler;
+mod util;
 
 struct Handler(&'static Vec<&'static dyn UkubotCommand>);
 
@@ -36,7 +37,7 @@ impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
             // don't accept dm commands
-            if let None = command.guild_id {
+            if command.guild_id.is_none() {
                 return;
             }
 

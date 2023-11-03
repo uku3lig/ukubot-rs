@@ -30,17 +30,17 @@ impl GuildConfig {
     }
 
     pub fn get<T: Into<GuildId>>(id: T) -> Self {
-        let conf = GuildConfig::read().unwrap_or(HashMap::new());
+        let conf = GuildConfig::read().unwrap_or_default();
 
         conf.get(&id.into()).cloned().unwrap_or_default()
     }
 
     pub fn save<T: Into<GuildId>>(&self, id: T) -> Result<()> {
-        let mut conf = GuildConfig::read().unwrap_or(HashMap::new());
+        let mut conf = GuildConfig::read().unwrap_or_default();
         conf.insert(id.into(), self.clone());
 
         let conf = toml::to_string(&conf)?;
-        std::fs::write("config.toml", conf)?;
+        std::fs::write(CONFIG_FILE, conf)?;
         Ok(())
     }
 }
