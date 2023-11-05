@@ -11,6 +11,7 @@ use serenity::prelude::GatewayIntents;
 use serenity::Client;
 
 use crate::core::{register_commands, PersistentButton, SlashCommand};
+use crate::util::QuickInteractionReply;
 
 mod bot;
 mod config;
@@ -51,11 +52,7 @@ impl EventHandler for Handler {
                     if command.data.name == get_cmd_name(cmd) {
                         if let Err(e) = cmd.on_command(&ctx, &command).await {
                             tracing::error!("An error occurred in command handler: {:?}", e);
-                            let _ = command
-                                .create_interaction_response(&ctx.http, |r| {
-                                    r.interaction_response_data(|d| d.content("An error occurred"))
-                                })
-                                .await;
+                            let _ = command.reply(&ctx, "An error occurred").await;
                         }
                     }
                 }
@@ -68,13 +65,7 @@ impl EventHandler for Handler {
                         if component.data.custom_id == get_btn_id(btn) {
                             if let Err(e) = btn.on_press(&ctx, &component).await {
                                 tracing::error!("An error occurred in button handler: {:?}", e);
-                                let _ = component
-                                    .create_interaction_response(&ctx.http, |r| {
-                                        r.interaction_response_data(|d| {
-                                            d.content("An error occurred")
-                                        })
-                                    })
-                                    .await;
+                                let _ = component.reply(&ctx, "An error occurred").await;
                             }
                         }
                     }

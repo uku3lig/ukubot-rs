@@ -11,7 +11,7 @@ use serenity::model::Permissions;
 
 use crate::config::GuildConfig;
 use crate::core::SlashCommand;
-use crate::util::ParseSnowflake;
+use crate::util::{ParseSnowflake, QuickInteractionReply};
 
 pub struct RatioCommand;
 
@@ -40,11 +40,7 @@ impl SlashCommand for RatioCommand {
             .collect::<Vec<_>>()
             .join(" + ");
 
-        interaction
-            .create_interaction_response(&ctx.http, |r| {
-                r.interaction_response_data(|d| d.content(ratio))
-            })
-            .await?;
+        interaction.reply(ctx, ratio).await?;
 
         Ok(())
     }
@@ -89,11 +85,7 @@ impl SlashCommand for EchoCommand {
 
         interaction.channel_id.say(&ctx.http, text).await?;
 
-        interaction
-            .create_interaction_response(&ctx.http, |r| {
-                r.interaction_response_data(|d| d.content("sent!").ephemeral(true))
-            })
-            .await?;
+        interaction.reply_ephemeral(ctx, "sent!").await?;
 
         Ok(())
     }
@@ -155,11 +147,7 @@ impl SlashCommand for ConfigCommand {
             format!("Invalid parameters: {}", invalid.join(", "))
         };
 
-        interaction
-            .create_interaction_response(&ctx.http, |r| {
-                r.interaction_response_data(|d| d.content(message).ephemeral(true))
-            })
-            .await?;
+        interaction.reply_ephemeral(ctx, message).await?;
 
         Ok(())
     }
