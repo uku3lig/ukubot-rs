@@ -9,8 +9,8 @@ use serenity::model::channel::ChannelType;
 use serenity::model::id::ChannelId;
 use serenity::model::Permissions;
 
-use crate::command::UkubotCommand;
 use crate::config::GuildConfig;
+use crate::core::SlashCommand;
 use crate::util::ParseSnowflake;
 
 pub struct RatioCommand;
@@ -21,7 +21,7 @@ static RATIO: Lazy<Vec<String>> = Lazy::new(|| {
 });
 
 #[serenity::async_trait]
-impl UkubotCommand for RatioCommand {
+impl SlashCommand for RatioCommand {
     fn register<'a>(
         &self,
         command: &'a mut CreateApplicationCommand,
@@ -53,7 +53,7 @@ impl UkubotCommand for RatioCommand {
 pub struct EchoCommand;
 
 #[serenity::async_trait]
-impl UkubotCommand for EchoCommand {
+impl SlashCommand for EchoCommand {
     fn register<'a>(
         &self,
         command: &'a mut CreateApplicationCommand,
@@ -102,7 +102,7 @@ impl UkubotCommand for EchoCommand {
 pub struct ConfigCommand;
 
 #[serenity::async_trait]
-impl UkubotCommand for ConfigCommand {
+impl SlashCommand for ConfigCommand {
     fn register<'a>(
         &self,
         command: &'a mut CreateApplicationCommand,

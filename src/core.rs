@@ -1,12 +1,13 @@
+use std::env;
+
 use serenity::builder::{CreateApplicationCommand, CreateApplicationCommands};
 use serenity::client::Context;
 use serenity::model::application::command::Command;
 use serenity::model::id::GuildId;
 use serenity::model::prelude::application_command::ApplicationCommandInteraction;
-use std::env;
 
 #[serenity::async_trait]
-pub trait UkubotCommand: Send + Sync {
+pub trait SlashCommand: Send + Sync {
     #[allow(clippy::mut_from_ref)]
     fn register<'a>(
         &self,
@@ -20,7 +21,7 @@ pub trait UkubotCommand: Send + Sync {
     ) -> anyhow::Result<()>;
 }
 
-pub async fn register_commands(ctx: &Context, cmds: &Vec<&'static dyn UkubotCommand>) {
+pub async fn register_commands(ctx: &Context, cmds: &Vec<&'static dyn SlashCommand>) {
     let commands = if let Ok(g) = env::var("GUILD_ID") {
         let guild_id = GuildId(g.parse().expect("Could not parse GUILD_ID"));
         guild_id
@@ -39,7 +40,7 @@ pub async fn register_commands(ctx: &Context, cmds: &Vec<&'static dyn UkubotComm
 
 fn register_commands_internal<'a>(
     creator: &'a mut CreateApplicationCommands,
-    commands: &Vec<&'static dyn UkubotCommand>,
+    commands: &Vec<&'static dyn SlashCommand>,
 ) -> &'a mut CreateApplicationCommands {
     for cmd in commands {
         creator.create_application_command(|c| cmd.register(c));

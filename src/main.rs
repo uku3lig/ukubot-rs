@@ -9,15 +9,15 @@ use serenity::model::prelude::Interaction;
 use serenity::prelude::GatewayIntents;
 use serenity::Client;
 
-use crate::command::{register_commands, UkubotCommand};
+use crate::core::{register_commands, SlashCommand};
 
 mod bot;
-mod command;
 mod config;
+mod core;
 mod handler;
 mod util;
 
-struct Handler(&'static Vec<&'static dyn UkubotCommand>);
+struct Handler(&'static Vec<&'static dyn SlashCommand>);
 
 #[serenity::async_trait]
 impl EventHandler for Handler {
@@ -90,7 +90,7 @@ async fn main() {
     }
 }
 
-fn get_cmd_name(cmd: &&dyn UkubotCommand) -> String {
+fn get_cmd_name(cmd: &&dyn SlashCommand) -> String {
     let mut com = CreateApplicationCommand::default();
     cmd.register(&mut com);
 
