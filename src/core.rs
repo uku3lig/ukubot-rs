@@ -1,14 +1,14 @@
 use std::env;
 
-use serenity::builder::{CreateApplicationCommand, CreateApplicationCommands};
+use serenity::builder::{CreateApplicationCommand, CreateApplicationCommands, CreateButton};
 use serenity::client::Context;
 use serenity::model::application::command::Command;
 use serenity::model::id::GuildId;
 use serenity::model::prelude::application_command::ApplicationCommandInteraction;
+use serenity::model::prelude::message_component::MessageComponentInteraction;
 
 #[serenity::async_trait]
 pub trait SlashCommand: Send + Sync {
-    #[allow(clippy::mut_from_ref)]
     fn register<'a>(
         &self,
         command: &'a mut CreateApplicationCommand,
@@ -47,4 +47,15 @@ fn register_commands_internal<'a>(
     }
 
     creator
+}
+
+#[serenity::async_trait]
+pub trait PersistentButton: Send + Sync {
+    fn create<'a>(&self, button: &'a mut CreateButton) -> &'a mut CreateButton;
+
+    async fn on_press(
+        &self,
+        ctx: &Context,
+        interaction: &MessageComponentInteraction,
+    ) -> anyhow::Result<()>;
 }

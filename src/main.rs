@@ -1,15 +1,16 @@
 use std::env;
 
-use serenity::builder::CreateApplicationCommand;
+use serenity::builder::{CreateApplicationCommand, CreateButton};
 use serenity::client::{Context, EventHandler};
 use serenity::framework::StandardFramework;
+use serenity::model::application::component::ComponentType;
+use serenity::model::application::interaction::Interaction;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
-use serenity::model::prelude::Interaction;
 use serenity::prelude::GatewayIntents;
 use serenity::Client;
 
-use crate::core::{register_commands, SlashCommand};
+use crate::core::{register_commands, PersistentButton, SlashCommand};
 
 mod bot;
 mod config;
@@ -17,7 +18,10 @@ mod core;
 mod handler;
 mod util;
 
-struct Handler(&'static Vec<&'static dyn SlashCommand>);
+struct Handler {
+    commands: &'static Vec<&'static dyn SlashCommand>,
+    buttons: &'static Vec<&'static dyn PersistentButton>,
+}
 
 #[serenity::async_trait]
 impl EventHandler for Handler {
@@ -29,32 +33,55 @@ impl EventHandler for Handler {
     }
 
     async fn ready(&self, ctx: Context, data: Ready) {
-        register_commands(&ctx, self.0).await;
+        register_commands(&ctx, self.commands).await;
 
         tracing::info!("{} is connected!", data.user.name);
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command) = interaction {
-            // don't accept dm commands
-            if command.guild_id.is_none() {
-                return;
-            }
+        match interaction {
+            Interaction::ApplicationCommand(command) => {
+                // don't accept dm commands
+                if command.guild_id.is_none() {
+                    return;
+                }
 
-            tracing::info!("received command {}", command.data.name);
-            for cmd in self.0 {
-                if command.data.name == get_cmd_name(cmd) {
-                    if let Err(e) = cmd.on_command(&ctx, &command).await {
-                        tracing::error!("An error occurred in command handler: {:?}", e);
-                        let _ = command
-                            .create_interaction_response(&ctx.http, |r| {
-                                r.interaction_response_data(|d| d.content("An error occurred"))
-                            })
-                            .await;
+                tracing::info!("received command {}", command.data.name);
+                for cmd in self.commands {
+                    if command.data.name == get_cmd_name(cmd) {
+                        if let Err(e) = cmd.on_command(&ctx, &command).await {
+                            tracing::error!("An error occurred in command handler: {:?}", e);
+                            let _ = command
+                                .create_interaction_response(&ctx.http, |r| {
+                                    r.interaction_response_data(|d| d.content("An error occurred"))
+                                })
+                                .await;
+                        }
                     }
                 }
             }
-        } // turn this into a match later
+            Interaction::MessageComponent(component) => {
+                if component.data.component_type == ComponentType::Button {
+                    tracing::info!("received button {}", component.data.custom_id);
+
+                    for btn in self.buttons {
+                        if component.data.custom_id == get_btn_id(btn) {
+                            if let Err(e) = btn.on_press(&ctx, &component).await {
+                                tracing::error!("An error occurred in button handler: {:?}", e);
+                                let _ = component
+                                    .create_interaction_response(&ctx.http, |r| {
+                                        r.interaction_response_data(|d| {
+                                            d.content("An error occurred")
+                                        })
+                                    })
+                                    .await;
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 }
 
@@ -72,7 +99,10 @@ async fn main() {
 
     let mut client = Client::builder(token, intents)
         .framework(framework)
-        .event_handler(Handler(&bot::COMMANDS))
+        .event_handler(Handler {
+            commands: &bot::COMMANDS,
+            buttons: &bot::BUTTONS,
+        })
         .await
         .expect("Could not create client");
 
@@ -94,5 +124,12 @@ fn get_cmd_name(cmd: &&dyn SlashCommand) -> String {
     let mut com = CreateApplicationCommand::default();
     cmd.register(&mut com);
 
-    com.0["name"].as_str().unwrap_or("").into()
+    com.0["name"].as_str().unwrap_or_default().into()
+}
+
+fn get_btn_id(cmd: &&dyn PersistentButton) -> String {
+    let mut btn = CreateButton::default();
+    cmd.create(&mut btn);
+
+    btn.0["custom_id"].as_str().unwrap_or_default().into()
 }
