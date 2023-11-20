@@ -14,6 +14,8 @@
         openssl
         pkg-config
       ];
+
+      packages = with pkgs; [nil];
     };
 
     formatter = pkgs.alejandra;
