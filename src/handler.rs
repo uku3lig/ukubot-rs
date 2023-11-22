@@ -1,11 +1,39 @@
 use anyhow::Result;
 use chrono::Datelike;
-use serenity::client::Context;
-use serenity::model::channel::Message;
-use serenity::model::id::EmojiId;
-use serenity::model::misc::EmojiIdentifier;
+use poise::{serenity_prelude as serenity, Event};
+use serenity::{
+    Context, CreateButton, EmojiId, EmojiIdentifier, Interaction, Message,
+    MessageComponentInteraction,
+};
 
-pub async fn message(ctx: &Context, message: &Message) -> Result<()> {
+pub async fn handle(
+    ctx: &serenity::Context,
+    event: &Event<'_>,
+    _framework: poise::FrameworkContext<'_, (), anyhow::Error>,
+    _: &(),
+) -> Result<()> {
+    match event {
+        Event::Ready { data_about_bot } => {
+            tracing::info!("{} is connected!", data_about_bot.user.name);
+        }
+
+        Event::Message { new_message } => {
+            message(ctx, new_message).await?;
+        }
+
+        Event::InteractionCreate {
+            interaction: Interaction::MessageComponent(interaction),
+        } => {
+            button_press(ctx, interaction).await?;
+        }
+
+        _ => {}
+    }
+
+    Ok(())
+}
+
+async fn message(ctx: &Context, message: &Message) -> Result<()> {
     if message.author.bot {
         return Ok(());
     }
@@ -35,4 +63,25 @@ pub async fn message(ctx: &Context, message: &Message) -> Result<()> {
     }
 
     Ok(())
+}
+
+async fn button_press(ctx: &Context, interaction: &MessageComponentInteraction) -> Result<()> {
+    for (custom_id, button) in crate::bot::BUTTONS.iter() {
+        if interaction.data.custom_id == *custom_id {
+            button.on_press(ctx, interaction).await?;
+        }
+    }
+
+    Ok(())
+}
+
+#[serenity::async_trait]
+pub trait PersistentButton: Send + Sync {
+    fn create<'a>(&self, button: &'a mut CreateButton) -> &'a mut CreateButton;
+
+    async fn on_press(
+        &self,
+        ctx: &Context,
+        interaction: &MessageComponentInteraction,
+    ) -> anyhow::Result<()>;
 }

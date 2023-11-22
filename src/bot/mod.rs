@@ -1,11 +1,28 @@
-use once_cell::sync::Lazy;
+use std::collections::HashMap;
 
-use crate::bot::misc::{ConfigCommand, EchoCommand, RatioCommand};
-use crate::core::{PersistentButton, SlashCommand};
+use once_cell::sync::Lazy;
+use poise::Command;
+
+use crate::handler::PersistentButton;
 
 mod misc;
 
-pub static COMMANDS: Lazy<Vec<&'static dyn SlashCommand>> =
-    Lazy::new(|| vec![&RatioCommand, &EchoCommand, &ConfigCommand]);
+pub fn commands() -> Vec<Command<(), anyhow::Error>> {
+    vec![misc::echo(), misc::ratio(), misc::config()]
+}
 
-pub static BUTTONS: Lazy<Vec<&'static dyn PersistentButton>> = Lazy::new(|| vec![]);
+fn buttons() -> Vec<&'static dyn PersistentButton> {
+    vec![]
+}
+
+pub static BUTTONS: Lazy<HashMap<String, &'static dyn PersistentButton>> = Lazy::new(|| {
+    let mut map = HashMap::new();
+
+    for button in buttons() {
+        if let Some(id) = button.create(&mut Default::default()).0.get("custom_id") {
+            map.insert(id.to_string(), button);
+        }
+    }
+
+    map
+});
