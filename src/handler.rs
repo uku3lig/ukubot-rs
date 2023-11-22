@@ -69,13 +69,14 @@ async fn button_press(ctx: &Context, interaction: &MessageComponentInteraction) 
     for (custom_id, button) in crate::bot::BUTTONS.iter() {
         if interaction.data.custom_id == *custom_id {
             button.on_press(ctx, interaction).await?;
+            // TODO proper error handler with reply here, poise doesn't do it for me :pensive:
         }
     }
 
     Ok(())
 }
 
-#[serenity::async_trait]
+#[poise::async_trait]
 pub trait PersistentButton: Send + Sync {
     fn create<'a>(&self, button: &'a mut CreateButton) -> &'a mut CreateButton;
 

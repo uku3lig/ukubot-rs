@@ -8,6 +8,7 @@ use std::env;
 
 mod bot;
 mod config;
+mod consts;
 mod handler;
 
 type Context<'a> = poise::Context<'a, (), anyhow::Error>;

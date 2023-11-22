@@ -6,13 +6,26 @@ use poise::Command;
 use crate::handler::PersistentButton;
 
 mod misc;
+mod requests;
 
 pub fn commands() -> Vec<Command<(), anyhow::Error>> {
-    vec![misc::echo(), misc::ratio(), misc::config()]
+    vec![
+        misc::echo(),
+        misc::ratio(),
+        misc::config(),
+        requests::open::open_requests(),
+    ]
 }
 
 fn buttons() -> Vec<&'static dyn PersistentButton> {
-    vec![]
+    vec![
+        &requests::open::CreateRequestButton,
+        &requests::manage::AcceptRequestButton,
+        &requests::manage::RejectRequestButton,
+        &requests::ticket::FinishRequestButton,
+        &requests::ticket::DiscontinueRequestButton,
+        &requests::export::ExportButton,
+    ]
 }
 
 pub static BUTTONS: Lazy<HashMap<String, &'static dyn PersistentButton>> = Lazy::new(|| {
