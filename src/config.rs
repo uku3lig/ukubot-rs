@@ -11,7 +11,7 @@ pub const CONFIG_FILE: &str = "ukubot_config.toml";
 #[serde(default)]
 pub struct GuildConfig {
     pub requests_open: bool,
-    pub form_channel: ChannelId,
+    pub requests_channel: ChannelId,
     pub ticket_category: ChannelId,
     pub closed_category: ChannelId,
     pub finished_channel: ChannelId,

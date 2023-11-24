@@ -42,11 +42,19 @@ pub async fn echo(
 #[poise::command(slash_command, required_permissions = "ADMINISTRATOR")]
 pub async fn config(
     ctx: Context<'_>,
-    requests_open: Option<bool>,
-    form_channel: Option<serenity::GuildChannel>,
-    ticket_category: Option<serenity::ChannelCategory>,
-    closed_category: Option<serenity::ChannelCategory>,
-    finished_channel: Option<serenity::GuildChannel>,
+    #[description = "whether or not requests are open"] requests_open: Option<bool>,
+    #[description = "the text channel where forms are sent"] requests_channel: Option<
+        serenity::GuildChannel,
+    >,
+    #[description = "the category where tickets are created"] ticket_category: Option<
+        serenity::GuildChannel,
+    >,
+    #[description = "the category where closed tickets are moved"] closed_category: Option<
+        serenity::GuildChannel,
+    >,
+    #[description = "the text channel where finished tickets are sent"] finished_channel: Option<
+        serenity::GuildChannel,
+    >,
 ) -> Result<()> {
     let guild_id = ctx
         .guild_id()
@@ -58,20 +66,56 @@ pub async fn config(
         config.requests_open = requests_open;
     }
 
-    if let Some(form_channel) = form_channel {
-        config.form_channel = form_channel.id;
+    if let Some(requests_channel) = requests_channel {
+        if requests_channel.kind == serenity::ChannelType::Text {
+            config.requests_channel = requests_channel.id;
+        } else {
+            ctx.send(|m| {
+                m.content("requests channel must be a text channel")
+                    .ephemeral(true)
+            })
+            .await?;
+            return Ok(());
+        }
     }
 
     if let Some(ticket_category) = ticket_category {
-        config.ticket_category = ticket_category.id;
+        if ticket_category.kind == serenity::ChannelType::Category {
+            config.ticket_category = ticket_category.id;
+        } else {
+            ctx.send(|m| {
+                m.content("ticket category must be a category channel")
+                    .ephemeral(true)
+            })
+            .await?;
+            return Ok(());
+        }
     }
 
     if let Some(closed_category) = closed_category {
-        config.closed_category = closed_category.id;
+        if closed_category.kind == serenity::ChannelType::Category {
+            config.closed_category = closed_category.id;
+        } else {
+            ctx.send(|m| {
+                m.content("closed category must be a category channel")
+                    .ephemeral(true)
+            })
+            .await?;
+            return Ok(());
+        }
     }
 
     if let Some(finished_channel) = finished_channel {
-        config.finished_channel = finished_channel.id;
+        if finished_channel.kind == serenity::ChannelType::Text {
+            config.finished_channel = finished_channel.id;
+        } else {
+            ctx.send(|m| {
+                m.content("finished channel must be a text channel")
+                    .ephemeral(true)
+            })
+            .await?;
+            return Ok(());
+        }
     }
 
     config.save(guild_id)?;
