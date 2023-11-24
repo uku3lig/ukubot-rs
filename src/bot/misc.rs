@@ -1,7 +1,7 @@
 use crate::{config::GuildConfig, Context};
 use anyhow::{anyhow, Result};
 use once_cell::sync::Lazy;
-use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::{self as serenity, channel};
 use rand::seq::SliceRandom;
 
 static RATIO: Lazy<Vec<String>> = Lazy::new(|| {
@@ -43,18 +43,18 @@ pub async fn echo(
 pub async fn config(
     ctx: Context<'_>,
     #[description = "whether or not requests are open"] requests_open: Option<bool>,
-    #[description = "the text channel where forms are sent"] requests_channel: Option<
-        serenity::GuildChannel,
-    >,
-    #[description = "the category where tickets are created"] ticket_category: Option<
-        serenity::GuildChannel,
-    >,
-    #[description = "the category where closed tickets are moved"] closed_category: Option<
-        serenity::GuildChannel,
-    >,
-    #[description = "the text channel where finished tickets are sent"] finished_channel: Option<
-        serenity::GuildChannel,
-    >,
+    #[description = "the text channel where forms are sent"]
+    #[channel_types("Text")]
+    requests_channel: Option<serenity::GuildChannel>,
+    #[description = "the category where tickets are created"]
+    #[channel_types("Category")] // FIXME poise/serenity issue waaaah
+    ticket_category: Option<serenity::GuildChannel>,
+    #[description = "the category where closed tickets are moved"]
+    #[channel_types("Category")]
+    closed_category: Option<serenity::GuildChannel>,
+    #[description = "the text channel where finished tickets are sent"]
+    #[channel_types("Text")]
+    finished_channel: Option<serenity::GuildChannel>,
 ) -> Result<()> {
     let guild_id = ctx
         .guild_id()
