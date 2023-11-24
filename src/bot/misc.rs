@@ -1,7 +1,7 @@
 use crate::{config::GuildConfig, Context};
 use anyhow::{anyhow, Result};
 use once_cell::sync::Lazy;
-use poise::serenity_prelude::{self as serenity, channel};
+use poise::serenity_prelude as serenity;
 use rand::seq::SliceRandom;
 
 static RATIO: Lazy<Vec<String>> = Lazy::new(|| {
@@ -47,11 +47,11 @@ pub async fn config(
     #[channel_types("Text")]
     requests_channel: Option<serenity::GuildChannel>,
     #[description = "the category where tickets are created"]
-    #[channel_types("Category")] // FIXME poise/serenity issue waaaah
-    ticket_category: Option<serenity::GuildChannel>,
+    #[channel_types("Category")]
+    ticket_category: Option<serenity::ChannelCategory>,
     #[description = "the category where closed tickets are moved"]
     #[channel_types("Category")]
-    closed_category: Option<serenity::GuildChannel>,
+    closed_category: Option<serenity::ChannelCategory>,
     #[description = "the text channel where finished tickets are sent"]
     #[channel_types("Text")]
     finished_channel: Option<serenity::GuildChannel>,
@@ -67,55 +67,19 @@ pub async fn config(
     }
 
     if let Some(requests_channel) = requests_channel {
-        if requests_channel.kind == serenity::ChannelType::Text {
-            config.requests_channel = requests_channel.id;
-        } else {
-            ctx.send(|m| {
-                m.content("requests channel must be a text channel")
-                    .ephemeral(true)
-            })
-            .await?;
-            return Ok(());
-        }
+        config.requests_channel = requests_channel.id;
     }
 
     if let Some(ticket_category) = ticket_category {
-        if ticket_category.kind == serenity::ChannelType::Category {
-            config.ticket_category = ticket_category.id;
-        } else {
-            ctx.send(|m| {
-                m.content("ticket category must be a category channel")
-                    .ephemeral(true)
-            })
-            .await?;
-            return Ok(());
-        }
+        config.ticket_category = ticket_category.id;
     }
 
     if let Some(closed_category) = closed_category {
-        if closed_category.kind == serenity::ChannelType::Category {
-            config.closed_category = closed_category.id;
-        } else {
-            ctx.send(|m| {
-                m.content("closed category must be a category channel")
-                    .ephemeral(true)
-            })
-            .await?;
-            return Ok(());
-        }
+        config.closed_category = closed_category.id;
     }
 
     if let Some(finished_channel) = finished_channel {
-        if finished_channel.kind == serenity::ChannelType::Text {
-            config.finished_channel = finished_channel.id;
-        } else {
-            ctx.send(|m| {
-                m.content("finished channel must be a text channel")
-                    .ephemeral(true)
-            })
-            .await?;
-            return Ok(());
-        }
+        config.finished_channel = finished_channel.id;
     }
 
     config.save(guild_id)?;
