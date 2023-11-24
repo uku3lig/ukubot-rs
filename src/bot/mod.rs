@@ -20,7 +20,7 @@ pub static BUTTONS: Lazy<HashMap<String, &'static dyn PersistentButton>> = Lazy:
 
     for button in buttons() {
         if let Some(id) = button.create(&mut Default::default()).0.get("custom_id") {
-            map.insert(id.to_string(), button);
+            map.insert(id.as_str().unwrap().into(), button);
         }
     }
 
