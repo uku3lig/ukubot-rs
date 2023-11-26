@@ -68,8 +68,14 @@ async fn message(ctx: &Context, message: &Message) -> Result<()> {
 async fn button_press(ctx: &Context, interaction: &MessageComponentInteraction) -> Result<()> {
     for (custom_id, button) in crate::bot::BUTTONS.iter() {
         if interaction.data.custom_id == *custom_id {
-            button.on_press(ctx, interaction).await?;
-            // TODO proper error handler with reply here, poise doesn't do it for me :pensive:
+            if let Err(e) = button.on_press(ctx, interaction).await {
+                tracing::error!("error handling '{}' button press: {}", custom_id, e);
+                interaction
+                    .create_followup_message(ctx, |m| {
+                        m.content("An unknown error occurred.").ephemeral(true)
+                    })
+                    .await?;
+            }
         }
     }
 
