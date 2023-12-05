@@ -133,6 +133,18 @@ impl PersistentButton for CreateRequestButton {
         // unwrapping here is safe because the button will always be in a guild
         let config = GuildConfig::get(interaction.guild_id.unwrap());
 
+        if !config.requests_open {
+            interaction
+                .create_interaction_response(ctx, |r| {
+                    r.interaction_response_data(|m| {
+                        m.content("requests are currently closed. please try again later.")
+                            .ephemeral(true)
+                    })
+                })
+                .await?;
+            return Ok(());
+        }
+
         let info: RequestModal = poise::modal::execute_modal_on_component_interaction(
             Box::new(ctx.clone()),
             Arc::new(interaction.clone()),
