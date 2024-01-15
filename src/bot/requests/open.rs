@@ -1,15 +1,14 @@
-use std::sync::Arc;
+use anyhow::anyhow;
+use poise::{serenity_prelude as serenity, CreateReply, Modal};
+use serenity::{
+    ComponentInteraction, CreateActionRow, CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter,
+    CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, Timestamp,
+};
 
+use super::manage;
 use crate::config::GuildConfig;
 use crate::handler::PersistentButton;
 use crate::Context;
-use anyhow::anyhow;
-use poise::{serenity_prelude as serenity, Modal};
-use serenity::builder::CreateButton;
-use serenity::model::application::interaction::message_component::MessageComponentInteraction;
-use serenity::Timestamp;
-
-use super::manage;
 
 /// opens the server for requests in the current channel
 #[poise::command(slash_command, required_permissions = "ADMINISTRATOR")]
@@ -41,10 +40,11 @@ pub async fn open_requests(ctx: Context<'_>) -> anyhow::Result<()> {
 
     if !missing.is_empty() {
         let missing = missing.join(", ");
-        ctx.send(|b| {
-            b.content(format!("missing channels: {missing}"))
-                .ephemeral(true)
-        })
+        ctx.send(
+            CreateReply::default()
+                .content(format!("missing channels: {missing}"))
+                .ephemeral(true),
+        )
         .await?;
 
         return Ok(());
@@ -58,41 +58,42 @@ pub async fn open_requests(ctx: Context<'_>) -> anyhow::Result<()> {
         .avatar_url()
         .unwrap_or_default();
 
-    ctx.channel_id().send_message(&ctx, |m| {
-        m.add_embed(|e| e
-                .title("Request a mod/plugin")
-                .description("Click the button below to request a mod or plugin.")
-                .field(
-                    "‼️ Do not request an already made mod/plugin!",
-                    "Please make sure to double check my [Modrinth page](https://modrinth.com/user/HiuxcjYJ) to see what is already available.",
-                    false,
-                )
-                .field(
-                    "📚 Make sure to read the terms",
-                    "They are subject to be updated at any time, so please check them everytime you request something.",
-                    false,
-                )
-                .field(
-                    "🈲 Do not troll",
-                    "This one should be common sense, but we never know.",
-                    false,
-                )
-                .field(
-                    "🛑 Failure to respect those rules exposes you to being permanently blacklisted from requesting.",
-                    " - uku",
-                    false,
-                )
-                .color(0x9b59b6)
-                .footer(|f| f.text("ukubot v0.6.9 (nice)").icon_url(avatar)),
-        )
-        .components(|c| {
-            c.create_action_row(|a| {
-                a.create_button(|b| CreateRequestButton.create(b))
-            })
-        })
-    }).await?;
+    let embed = CreateEmbed::new() .title("Request a mod/plugin")
+    .description("Click the button below to request a mod or plugin.")
+    .field(
+        "‼️ Do not request an already made mod/plugin!",
+        "Please make sure to double check my [Modrinth page](https://modrinth.com/user/HiuxcjYJ) to see what is already available.",
+        false,
+    )
+    .field(
+        "📚 Make sure to read the terms",
+        "They are subject to be updated at any time, so please check them everytime you request something.",
+        false,
+    )
+    .field(
+        "🈲 Do not troll",
+        "This one should be common sense, but we never know.",
+        false,
+    )
+    .field(
+        "🛑 Failure to respect those rules exposes you to being permanently blacklisted from requesting.",
+        " - uku",
+        false,
+    )
+    .color(0x9b59b6)
+    .footer(CreateEmbedFooter::new("ukubot v0.6.9 (nice)").icon_url(avatar));
 
-    ctx.send(|b| b.content("done!").ephemeral(true)).await?;
+    let components = vec![CreateActionRow::Buttons(vec![CreateRequestButton.create()])];
+
+    ctx.channel_id()
+        .send_message(
+            &ctx,
+            CreateMessage::new().embed(embed).components(components),
+        )
+        .await?;
+
+    ctx.send(CreateReply::default().content("done!").ephemeral(true))
+        .await?;
 
     Ok(())
 }
@@ -118,9 +119,8 @@ struct RequestModal {
 
 #[poise::async_trait]
 impl PersistentButton for CreateRequestButton {
-    fn create<'a>(&self, button: &'a mut CreateButton) -> &'a mut CreateButton {
-        button
-            .custom_id("open_mod_request")
+    fn create(&self) -> serenity::CreateButton {
+        serenity::CreateButton::new("open_mod_request")
             .label("Create a request")
             .emoji('📑')
     }
@@ -128,26 +128,29 @@ impl PersistentButton for CreateRequestButton {
     async fn on_press(
         &self,
         ctx: &serenity::Context,
-        interaction: &MessageComponentInteraction,
+        interaction: &ComponentInteraction,
     ) -> anyhow::Result<()> {
         // unwrapping here is safe because the button will always be in a guild
         let config = GuildConfig::get(interaction.guild_id.unwrap());
 
         if !config.requests_open {
             interaction
-                .create_interaction_response(ctx, |r| {
-                    r.interaction_response_data(|m| {
-                        m.content("requests are currently closed. please try again later.")
-                            .ephemeral(true)
-                    })
-                })
+                .create_response(
+                    ctx,
+                    CreateInteractionResponse::Message(
+                        CreateInteractionResponseMessage::new()
+                            .content("requests are currently closed. please try again later.")
+                            .ephemeral(true),
+                    ),
+                )
                 .await?;
+
             return Ok(());
         }
 
         let info: RequestModal = poise::modal::execute_modal_on_component_interaction(
             Box::new(ctx.clone()),
-            Arc::new(interaction.clone()),
+            interaction.clone(),
             None,
             None,
         )
@@ -156,28 +159,28 @@ impl PersistentButton for CreateRequestButton {
 
         let user = &interaction.user;
 
+        let embed = CreateEmbed::new()
+            .author(
+                CreateEmbedAuthor::new(&user.name).icon_url(user.avatar_url().unwrap_or_default()),
+            )
+            .field("Description", info.mod_desc, false)
+            .field("Amount", info.amount, false)
+            .field("Version", info.version, false)
+            .field("Deadline", info.deadline.unwrap_or("None".into()), false)
+            .timestamp(Timestamp::now())
+            .footer(CreateEmbedFooter::new(user.id.get().to_string()));
+
+        let components = vec![CreateActionRow::Buttons(vec![
+            manage::AcceptRequestButton.create(),
+            manage::RejectRequestButton.create(),
+        ])];
+
         config
             .requests_channel
-            .send_message(ctx, |m| {
-                m.embed(|e| {
-                    e.author(|a| {
-                        a.name(&user.name)
-                            .icon_url(&user.avatar_url().unwrap_or_default())
-                    })
-                    .field("Description", info.mod_desc, false)
-                    .field("Amount", info.amount, false)
-                    .field("Version", info.version, false)
-                    .field("Deadline", info.deadline.unwrap_or("None".into()), false)
-                    .timestamp(Timestamp::now())
-                    .footer(|f| f.text(user.id))
-                })
-                .components(|c| {
-                    c.create_action_row(|a| {
-                        a.create_button(|b| manage::AcceptRequestButton.create(b))
-                            .create_button(|b| manage::RejectRequestButton.create(b))
-                    })
-                })
-            })
+            .send_message(
+                ctx,
+                CreateMessage::new().embed(embed).components(components),
+            )
             .await?;
 
         Ok(())

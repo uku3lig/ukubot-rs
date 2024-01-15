@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use once_cell::sync::Lazy;
-use poise::Command;
+use poise::{serenity_prelude::CreateButton, Command};
 
 use crate::handler::PersistentButton;
 
@@ -32,10 +32,25 @@ pub static BUTTONS: Lazy<HashMap<String, &'static dyn PersistentButton>> = Lazy:
     let mut map = HashMap::new();
 
     for button in buttons() {
-        if let Some(id) = button.create(&mut Default::default()).0.get("custom_id") {
-            map.insert(id.as_str().unwrap().into(), button);
+        if let Some(id) = button_name(&button.create()) {
+            map.insert(id, button);
         }
     }
 
     map
 });
+
+// i strongly hate this. but there's not much else i can do sadly
+fn button_name(btn: &CreateButton) -> Option<String> {
+    let value = serde_json::to_value(btn).ok()?;
+
+    let s = value
+        .as_array()?
+        .first()?
+        .as_object()?
+        .get("custom_id")?
+        .as_str()?
+        .to_owned();
+
+    Some(s)
+}

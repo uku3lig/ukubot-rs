@@ -1,10 +1,10 @@
-use anyhow::Result;
-use poise::serenity_prelude as serenity;
-use poise::Framework;
-use poise::FrameworkError;
-use poise::FrameworkOptions;
-use serenity::GatewayIntents;
 use std::env;
+
+use anyhow::Result;
+use poise::{
+    serenity_prelude as serenity, CreateReply, Framework, FrameworkError, FrameworkOptions,
+};
+use serenity::{ClientBuilder, GatewayIntents};
 
 mod bot;
 mod config;
@@ -21,34 +21,37 @@ async fn main() {
 
     tracing_subscriber::fmt::init();
 
-    let options = FrameworkOptions {
-        commands: bot::commands(),
-        event_handler: |ctx, event, framework, data| {
-            Box::pin(handler::handle(ctx, event, framework, data))
-        },
-        on_error: |e| Box::pin(on_error(e)),
-        ..Default::default()
-    };
-
     let framework = poise::Framework::builder()
-        .token(env::var("UKUBOT_TOKEN").expect("missing UKUBOT_TOKEN"))
-        .intents(GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT)
-        .options(options)
+        .options(FrameworkOptions {
+            commands: bot::commands(),
+            event_handler: |ctx, event, framework, data| {
+                Box::pin(handler::handle(ctx, event, framework, data))
+            },
+            on_error: |e| Box::pin(on_error(e)),
+            ..Default::default()
+        })
         .setup(|ctx, _ready, framework| Box::pin(setup(ctx, framework)))
-        .build()
-        .await
-        .unwrap();
+        .build();
 
     let manager = framework.shard_manager().clone();
+
+    let mut client = ClientBuilder::new(
+        env::var("UKUBOT_TOKEN").expect("missing UKUBOT_TOKEN"),
+        GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
+    )
+    .framework(framework)
+    .await
+    .unwrap();
 
     tokio::spawn(async move {
         tokio::signal::ctrl_c()
             .await
             .expect("Could not register ctrl+c handler");
-        manager.lock().await.shutdown_all().await;
+
+        manager.shutdown_all().await;
     });
 
-    if let Err(e) = framework.start().await {
+    if let Err(e) = client.start().await {
         tracing::error!("an error occurred while running the client: {:?}", e);
     }
 }
@@ -72,11 +75,15 @@ async fn on_error(error: FrameworkError<'_, (), anyhow::Error>) {
         FrameworkError::Setup { error, .. } => {
             panic!("failed to start bot: {}", error);
         }
-        FrameworkError::Command { error, ctx } => {
+        FrameworkError::Command { error, ctx, .. } => {
             tracing::error!("command error: {}", error);
 
             if let Err(e) = ctx
-                .send(|b| b.content("an unknown error occurred").ephemeral(true))
+                .send(
+                    CreateReply::default()
+                        .content("an unknown error occurred")
+                        .ephemeral(true),
+                )
                 .await
             {
                 tracing::error!("failed to send error message: {}", e);
@@ -85,8 +92,8 @@ async fn on_error(error: FrameworkError<'_, (), anyhow::Error>) {
         FrameworkError::UnknownInteraction { interaction, .. } => {
             tracing::warn!(
                 "unknown interaction: {} (name: {})",
-                interaction.id(),
-                interaction.data().name
+                interaction.id,
+                interaction.data.name
             );
         }
         error => {
@@ -101,5 +108,5 @@ fn env_guild_id() -> Result<serenity::GuildId> {
     let env = env::var("GUILD_ID")?;
     let id = env.parse::<u64>()?;
 
-    Ok(serenity::GuildId(id))
+    Ok(serenity::GuildId::new(id))
 }

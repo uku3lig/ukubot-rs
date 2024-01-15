@@ -1,16 +1,28 @@
+use std::str::FromStr;
+
+use anyhow::anyhow;
 use poise::serenity_prelude as serenity;
+use serenity::CreateMessage;
 
 pub mod export;
 pub mod manage;
 pub mod open;
 pub mod ticket;
 
-fn get_user_from_embed(embed: &serenity::CreateEmbed) -> anyhow::Result<serenity::UserId> {
-    // this is fine :cdisaster:
-    let footer = embed.0["footer"].as_object().unwrap();
-    Ok(serenity::UserId(
-        footer["text"].as_str().unwrap().parse::<u64>()?,
-    ))
+// lets go guys we are so back i want to kill myself
+fn get_user_from_embed(embed: &serenity::CreateEmbed) -> Option<serenity::UserId> {
+    let value = serde_json::to_value(embed).ok()?;
+
+    let id = value
+        .as_array()?
+        .first()?
+        .as_object()?
+        .get("footer")?
+        .as_object()?
+        .get("text")?
+        .as_str()?;
+
+    serenity::UserId::from_str(id).ok()
 }
 
 fn get_channel_from_embed(embed: &serenity::Embed) -> anyhow::Result<serenity::ChannelId> {
@@ -25,17 +37,19 @@ fn get_channel_from_embed(embed: &serenity::Embed) -> anyhow::Result<serenity::C
         .take_while(|c| *c != '>')
         .collect::<String>();
 
-    Ok(serenity::ChannelId(id.parse::<u64>()?))
+    Ok(serenity::ChannelId::from_str(&id)?)
 }
 
 async fn dm_embed_to_user(
     ctx: &serenity::Context,
     embed: &serenity::CreateEmbed,
 ) -> anyhow::Result<()> {
-    let user = get_user_from_embed(embed)?;
+    let user =
+        get_user_from_embed(embed).ok_or_else(|| anyhow!("could not get user from embed"))?;
+
     let channel = user.create_dm_channel(ctx).await?;
     channel
-        .send_message(ctx, |m| m.set_embed(embed.clone()))
+        .send_message(ctx, CreateMessage::new().embed(embed.clone()))
         .await?;
 
     Ok(())
