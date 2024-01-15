@@ -1,21 +1,22 @@
-use std::sync::Arc;
+use anyhow::anyhow;
+use poise::{serenity_prelude as serenity, Modal};
+use serenity::{
+    ComponentInteraction, CreateActionRow, CreateChannel, CreateEmbed,
+    CreateInteractionResponseFollowup, CreateMessage, EditInteractionResponse, Mentionable,
+    PermissionOverwrite,
+};
 
+use super::ticket;
 use crate::config::GuildConfig;
 use crate::consts;
 use crate::handler::PersistentButton;
-use anyhow::anyhow;
-use poise::{serenity_prelude as serenity, Modal};
-use serenity::{CreateButton, CreateEmbed, MessageComponentInteraction, PermissionOverwrite};
-
-use super::ticket;
 
 pub struct AcceptRequestButton;
 
 #[poise::async_trait]
 impl PersistentButton for AcceptRequestButton {
-    fn create<'a>(&self, button: &'a mut CreateButton) -> &'a mut CreateButton {
-        button
-            .custom_id("accept_request")
+    fn create(&self) -> serenity::CreateButton {
+        serenity::CreateButton::new("accept_request")
             .label("Accept request")
             .style(serenity::ButtonStyle::Success)
     }
@@ -23,60 +24,69 @@ impl PersistentButton for AcceptRequestButton {
     async fn on_press(
         &self,
         ctx: &serenity::Context,
-        interaction: &MessageComponentInteraction,
+        interaction: &ComponentInteraction,
     ) -> anyhow::Result<()> {
         // unwrapping here is safe because the button will always be in a guild
         let config = GuildConfig::get(interaction.guild_id.unwrap());
 
-        let mut embed: CreateEmbed = interaction.message.embeds.first().unwrap().clone().into();
-        embed
+        let embed: CreateEmbed = interaction.message.embeds.first().unwrap().clone().into();
+        let embed = embed
             .title("Request Accepted")
             .color(consts::ACCEPTED_COLOR);
 
-        let user = super::get_user_from_embed(&embed)?.to_user(ctx).await?;
+        let user = super::get_user_from_embed(&embed)
+            .ok_or_else(|| anyhow!("user not found in embed"))?
+            .to_user(ctx)
+            .await?;
+
+        let mention = user.mention().to_string();
 
         let ticket_channel = interaction
             .guild_id
             .unwrap()
-            .create_channel(ctx, |c| {
-                c.category(config.ticket_category)
-                    .name(user.name)
+            .create_channel(
+                ctx,
+                CreateChannel::new(user.name)
+                    .category(config.ticket_category)
                     .kind(serenity::ChannelType::Text)
                     .permissions(vec![PermissionOverwrite {
                         allow: serenity::Permissions::VIEW_CHANNEL,
                         deny: serenity::Permissions::empty(),
                         kind: serenity::PermissionOverwriteType::Member(user.id),
-                    }])
-            })
+                    }]),
+            )
             .await?;
 
-        embed.description(format!("<#{}>", ticket_channel.id.0));
+        let embed = embed.description(ticket_channel.mention().to_string());
 
         ticket_channel
-            .send_message(ctx, |m| {
-                m.content(format!("<@{}>", user.id.0))
-                    .set_embed(embed.clone())
-            })
+            .send_message(
+                ctx,
+                CreateMessage::new().content(mention).embed(embed.clone()),
+            )
+            .await?;
+
+        let components = vec![CreateActionRow::Buttons(vec![
+            ticket::FinishRequestButton.create(),
+            ticket::DiscontinueRequestButton.create(),
+        ])];
+
+        interaction
+            .edit_response(
+                ctx,
+                EditInteractionResponse::new()
+                    .embed(embed)
+                    .components(components),
+            )
             .await?;
 
         interaction
-            .edit_original_message(ctx, |r| {
-                r.interaction_response_data(|m| {
-                    m.set_embed(embed).components(|c| {
-                        c.create_action_row(|a| {
-                            a.create_button(|b| ticket::FinishRequestButton.create(b))
-                                .create_button(|b| ticket::DiscontinueRequestButton.create(b))
-                        })
-                    })
-                })
-            })
-            .await?;
-
-        interaction
-            .create_followup_message(ctx, |r| {
-                r.content(format!("<#{}>", ticket_channel.id.0))
-                    .ephemeral(true)
-            })
+            .create_followup(
+                ctx,
+                CreateInteractionResponseFollowup::new()
+                    .content(ticket_channel.mention().to_string())
+                    .ephemeral(true),
+            )
             .await?;
 
         Ok(())
@@ -95,9 +105,8 @@ struct RejectModal {
 
 #[poise::async_trait]
 impl PersistentButton for RejectRequestButton {
-    fn create<'a>(&self, button: &'a mut CreateButton) -> &'a mut CreateButton {
-        button
-            .custom_id("reject_request")
+    fn create(&self) -> serenity::CreateButton {
+        serenity::CreateButton::new("reject_request")
             .label("Reject request")
             .style(serenity::ButtonStyle::Danger)
     }
@@ -105,19 +114,19 @@ impl PersistentButton for RejectRequestButton {
     async fn on_press(
         &self,
         ctx: &serenity::Context,
-        interaction: &MessageComponentInteraction,
+        interaction: &ComponentInteraction,
     ) -> anyhow::Result<()> {
         let info: RejectModal = poise::modal::execute_modal_on_component_interaction(
             Box::new(ctx.clone()),
-            Arc::new(interaction.clone()),
+            interaction.clone(),
             None,
             None,
         )
         .await?
         .ok_or(anyhow!("could not parse modal response"))?;
 
-        let mut embed: CreateEmbed = interaction.message.embeds.first().unwrap().clone().into();
-        embed
+        let embed: CreateEmbed = interaction.message.embeds.first().unwrap().clone().into();
+        let embed = embed
             .color(consts::REJECTED_COLOR)
             .field("Reason", info.reason.unwrap_or("None".into()), false)
             .title("Request Rejected");
@@ -131,11 +140,21 @@ impl PersistentButton for RejectRequestButton {
         };
 
         interaction
-            .edit_original_interaction_response(ctx, |m| m.set_embed(embed).components(|c| c))
+            .edit_response(
+                ctx,
+                EditInteractionResponse::new()
+                    .embed(embed)
+                    .components(vec![]),
+            )
             .await?;
 
         interaction
-            .create_followup_message(ctx, |r| r.content(response).ephemeral(true))
+            .create_followup(
+                ctx,
+                CreateInteractionResponseFollowup::new()
+                    .content(response)
+                    .ephemeral(true),
+            )
             .await?;
 
         Ok(())

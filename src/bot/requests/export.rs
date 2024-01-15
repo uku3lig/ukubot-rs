@@ -1,14 +1,17 @@
-use crate::handler::PersistentButton;
 use poise::serenity_prelude as serenity;
-use serenity::futures::StreamExt;
+use serenity::{
+    futures::StreamExt, CreateAttachment, CreateInteractionResponse,
+    CreateInteractionResponseMessage, CreateMessage, EditMessage,
+};
+
+use crate::handler::PersistentButton;
 
 pub struct ExportButton;
 
 #[poise::async_trait]
 impl PersistentButton for ExportButton {
-    fn create<'a>(&self, button: &'a mut serenity::CreateButton) -> &'a mut serenity::CreateButton {
-        button
-            .custom_id("export_request")
+    fn create(&self) -> serenity::CreateButton {
+        serenity::CreateButton::new("export_request")
             .label("Export request")
             .style(serenity::ButtonStyle::Primary)
     }
@@ -16,24 +19,23 @@ impl PersistentButton for ExportButton {
     async fn on_press(
         &self,
         ctx: &serenity::Context,
-        interaction: &serenity::MessageComponentInteraction,
+        interaction: &serenity::ComponentInteraction,
     ) -> anyhow::Result<()> {
         let channel = super::get_channel_from_embed(interaction.message.embeds.first().unwrap())?;
-        let channel_name = channel
-            .name(ctx)
-            .await
-            .ok_or(anyhow::anyhow!("no channel name"))?;
+        let channel_name = channel.name(ctx).await?;
 
         interaction
-            .create_interaction_response(ctx, |r| {
-                r.interaction_response_data(|m| {
-                    m.content(format!(
-                        "exporting channel {}, please wait...",
-                        channel_name
-                    ))
-                    .ephemeral(true)
-                })
-            })
+            .create_response(
+                ctx,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .content(format!(
+                            "exporting channel {}, please wait...",
+                            channel_name
+                        ))
+                        .ephemeral(true),
+                ),
+            )
             .await?;
 
         // messages here are in reverse order (newest first)
@@ -56,20 +58,27 @@ impl PersistentButton for ExportButton {
             export.trim_end()
         );
 
-        let filename = format!("export-{}-{}.txt", channel_name, channel.0);
+        let filename = format!("export-{}-{}.txt", channel_name, channel.get());
 
         interaction
             .user
             .create_dm_channel(ctx)
             .await?
-            .send_message(ctx, |m| {
-                m.content(format!("Log exports for {}", channel_name))
-                    .add_file((export.as_bytes(), filename.as_str()))
-            })
+            .send_message(
+                ctx,
+                CreateMessage::new()
+                    .content(format!("Log exports for {}", channel_name))
+                    .add_file(CreateAttachment::bytes(
+                        export.as_bytes(),
+                        filename.as_str(),
+                    )),
+            )
             .await?;
 
         let mut orig_msg = interaction.message.clone();
-        orig_msg.edit(ctx, |m| m.components(|c| c)).await?;
+        orig_msg
+            .edit(ctx, EditMessage::new().components(vec![]))
+            .await?;
 
         Ok(())
     }

@@ -1,11 +1,12 @@
-use std::{sync::Arc, vec};
-
-use crate::{config::GuildConfig, consts, handler::PersistentButton};
 use anyhow::anyhow;
 use poise::{serenity_prelude as serenity, Modal};
-use serenity::CreateEmbed;
+use serenity::{
+    CreateActionRow, CreateEmbed, CreateInteractionResponseFollowup, CreateMessage, EditChannel,
+    EditInteractionResponse,
+};
 
 use super::export;
+use crate::{config::GuildConfig, consts, handler::PersistentButton};
 
 pub struct FinishRequestButton;
 
@@ -20,9 +21,8 @@ struct FinishModal {
 
 #[poise::async_trait]
 impl PersistentButton for FinishRequestButton {
-    fn create<'a>(&self, button: &'a mut serenity::CreateButton) -> &'a mut serenity::CreateButton {
-        button
-            .custom_id("finish_request")
+    fn create(&self) -> serenity::CreateButton {
+        serenity::CreateButton::new("finish_request")
             .label("Finish request")
             .style(serenity::ButtonStyle::Primary)
     }
@@ -30,7 +30,7 @@ impl PersistentButton for FinishRequestButton {
     async fn on_press(
         &self,
         ctx: &serenity::Context,
-        interaction: &serenity::MessageComponentInteraction,
+        interaction: &serenity::ComponentInteraction,
     ) -> anyhow::Result<()> {
         let embed = close_request(
             ctx,
@@ -48,7 +48,7 @@ impl PersistentButton for FinishRequestButton {
         let config = GuildConfig::get(interaction.guild_id.unwrap());
         config
             .finished_channel
-            .send_message(ctx, |m| m.set_embed(embed))
+            .send_message(ctx, CreateMessage::new().embed(embed))
             .await?;
 
         Ok(())
@@ -67,9 +67,8 @@ struct DiscontinueModal {
 
 #[poise::async_trait]
 impl PersistentButton for DiscontinueRequestButton {
-    fn create<'a>(&self, button: &'a mut serenity::CreateButton) -> &'a mut serenity::CreateButton {
-        button
-            .custom_id("discontinue_request")
+    fn create(&self) -> serenity::CreateButton {
+        serenity::CreateButton::new("discontinue_request")
             .label("Discontinue request")
             .style(serenity::ButtonStyle::Secondary)
     }
@@ -77,9 +76,9 @@ impl PersistentButton for DiscontinueRequestButton {
     async fn on_press(
         &self,
         ctx: &serenity::Context,
-        interaction: &serenity::MessageComponentInteraction,
+        interaction: &serenity::ComponentInteraction,
     ) -> anyhow::Result<()> {
-        close_request(
+        let _ = close_request(
             ctx,
             interaction,
             "Request discontinued.",
@@ -97,15 +96,15 @@ impl PersistentButton for DiscontinueRequestButton {
 
 async fn close_request<M: Modal, S: ToString>(
     ctx: &serenity::Context,
-    interaction: &serenity::MessageComponentInteraction,
+    interaction: &serenity::ComponentInteraction,
     action: S,
-    embed_builder: impl FnOnce(&mut CreateEmbed, M) -> &mut CreateEmbed,
+    embed_builder: impl FnOnce(CreateEmbed, M) -> CreateEmbed,
 ) -> anyhow::Result<CreateEmbed> {
     let config = GuildConfig::get(interaction.guild_id.unwrap());
 
     let info: M = poise::modal::execute_modal_on_component_interaction(
         Box::new(ctx.clone()),
-        Arc::new(interaction.clone()),
+        interaction.clone(),
         None,
         None,
     )
@@ -113,13 +112,15 @@ async fn close_request<M: Modal, S: ToString>(
     .ok_or(anyhow!("could not parse modal response"))?;
 
     let orig_embed = interaction.message.embeds.first().unwrap();
-    let mut embed: CreateEmbed = orig_embed.clone().into();
-    embed_builder(&mut embed, info);
+    let embed = embed_builder(orig_embed.clone().into(), info);
 
     super::get_channel_from_embed(orig_embed)?
-        .edit(ctx, |c| {
-            c.category(config.closed_category).permissions(vec![])
-        })
+        .edit(
+            ctx,
+            EditChannel::new()
+                .category(config.closed_category)
+                .permissions(vec![]),
+        )
         .await?;
 
     let response = match super::dm_embed_to_user(ctx, &embed).await {
@@ -131,15 +132,23 @@ async fn close_request<M: Modal, S: ToString>(
     };
 
     interaction
-        .edit_original_interaction_response(ctx, |m| {
-            m.set_embed(embed.clone()).components(|c| {
-                c.create_action_row(|a| a.create_button(|b| export::ExportButton.create(b)))
-            })
-        })
+        .edit_response(
+            ctx,
+            EditInteractionResponse::new()
+                .embed(embed.clone())
+                .components(vec![CreateActionRow::Buttons(vec![
+                    export::ExportButton.create()
+                ])]),
+        )
         .await?;
 
     interaction
-        .create_followup_message(ctx, |m| m.content(response).ephemeral(true))
+        .create_followup(
+            ctx,
+            CreateInteractionResponseFollowup::new()
+                .content(response)
+                .ephemeral(true),
+        )
         .await?;
 
     Ok(embed)
