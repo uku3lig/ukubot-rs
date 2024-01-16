@@ -33,8 +33,6 @@ async fn main() {
         .setup(|ctx, _ready, framework| Box::pin(setup(ctx, framework)))
         .build();
 
-    let manager = framework.shard_manager().clone();
-
     let mut client = ClientBuilder::new(
         env::var("UKUBOT_TOKEN").expect("missing UKUBOT_TOKEN"),
         GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
@@ -42,6 +40,8 @@ async fn main() {
     .framework(framework)
     .await
     .unwrap();
+
+    let manager = client.shard_manager.clone();
 
     tokio::spawn(async move {
         tokio::signal::ctrl_c()
