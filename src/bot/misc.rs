@@ -26,7 +26,7 @@ pub async fn ratio(ctx: Context<'_>) -> Result<()> {
 }
 
 /// say things
-#[poise::command(slash_command, required_permissions = "ADMINISTRATOR")]
+#[poise::command(slash_command, guild_only, required_permissions = "ADMINISTRATOR")]
 pub async fn echo(
     ctx: Context<'_>,
     #[description = "the thing to say"] text: String,
@@ -44,7 +44,7 @@ pub async fn echo(
 }
 
 /// configures the bot to your linkings
-#[poise::command(slash_command, required_permissions = "ADMINISTRATOR")]
+#[poise::command(slash_command, guild_only, required_permissions = "ADMINISTRATOR")]
 pub async fn config(
     ctx: Context<'_>,
     #[description = "whether or not requests are open"] requests_open: Option<bool>,

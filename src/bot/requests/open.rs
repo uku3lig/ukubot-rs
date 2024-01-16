@@ -11,7 +11,7 @@ use crate::handler::PersistentButton;
 use crate::Context;
 
 /// opens the server for requests in the current channel
-#[poise::command(slash_command, required_permissions = "ADMINISTRATOR")]
+#[poise::command(slash_command, guild_only, required_permissions = "ADMINISTRATOR")]
 pub async fn open_requests(ctx: Context<'_>) -> anyhow::Result<()> {
     let guild = ctx
         .guild_id()
