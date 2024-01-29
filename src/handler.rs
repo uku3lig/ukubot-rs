@@ -3,7 +3,7 @@ use chrono::Datelike;
 use poise::serenity_prelude as serenity;
 use serenity::{
     ComponentInteraction, Context, CreateButton, CreateInteractionResponseFollowup, EmojiId,
-    FullEvent, Interaction, Message,
+    FullEvent, Interaction, Message, ReactionType,
 };
 
 pub async fn handle(
@@ -47,9 +47,13 @@ async fn message(ctx: &Context, message: &Message) -> Result<()> {
     }
 
     if content.contains("uku3lig") {
-        message
-            .react(&ctx.http, EmojiId::new(1007036728294527066))
-            .await?;
+        let reaction = ReactionType::Custom {
+            animated: false,
+            id: EmojiId::new(1007036728294527066),
+            name: Some("uku".to_string()),
+        };
+
+        message.react(&ctx.http, reaction).await?;
     }
 
     if content.contains("gay") && chrono::Utc::now().month() == 6 {
