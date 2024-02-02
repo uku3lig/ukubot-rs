@@ -7,7 +7,7 @@
 }:
 rustPlatform.buildRustPackage {
   pname = "ukubot-rs";
-  version = builtins.substring 0 8 self.lastModifiedDate or "dirty";
+  version = self.shortRev or self.dirtyShortRev or "dirty";
 
   cargoLock.lockFile = ../Cargo.lock;
 
