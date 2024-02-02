@@ -4,8 +4,6 @@
   openssl,
   pkg-config,
   self,
-  lto ? true,
-  optimizeSize ? false,
 }:
 rustPlatform.buildRustPackage {
   pname = "ukubot-rs";
@@ -17,10 +15,6 @@ rustPlatform.buildRustPackage {
 
   buildInputs = [openssl];
   nativeBuildInputs = [pkg-config];
-
-  RUSTFLAGS =
-    lib.optionalString lto " -C lto=thin -C embed-bitcode=yes"
-    + lib.optionalString optimizeSize " -C codegen-units=1 -C strip=symbols -C opt-level=z";
 
   meta = with lib; {
     mainProgram = "ukubot-rs";

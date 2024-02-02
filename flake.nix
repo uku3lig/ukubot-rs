@@ -35,14 +35,13 @@
       }: {
         packages = {
           ukubot-rs = pkgs.callPackage ./parts/derivation.nix {inherit self;};
-          ukubot-rs-smol = self'.packages.ukubot-rs.override {optimizeSize = true;};
           default = self'.packages.ukubot-rs;
 
           container = pkgs.dockerTools.buildLayeredImage {
             name = "ukubot-rs";
             tag = "latest";
             contents = [pkgs.dockerTools.caCertificates];
-            config.Cmd = [(lib.getExe self'.packages.ukubot-rs-smol)];
+            config.Cmd = [(lib.getExe self'.packages.ukubot-rs)];
           };
         };
       };

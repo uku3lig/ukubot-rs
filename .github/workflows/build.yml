@@ -1,6 +1,6 @@
 # thanks getchoo :3
 
-name: upload to registry
+name: build and cache stuff
 # this is for uploading images to a container registry when
 # changes are made to `main`
 
@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  upload:
+  build:
     runs-on: ubuntu-latest
 
     permissions:
@@ -24,9 +24,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - name: fetch docker image
+      - name: setup cachix
+        uses: cachix/cachix-action@v13
+        with:
+          name: uku3lig
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      
+      - name: build derivation
+        run: nix build --accept-flake-config -L .#ukubot-rs
+
+      - name: build docker image
         run: |
           nix build --accept-flake-config -L .#container
           readlink result | xargs -I {} cp {} ukubot-rs.tar.gz
