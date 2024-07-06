@@ -22,19 +22,19 @@ pub async fn open_requests(ctx: Context<'_>) -> anyhow::Result<()> {
 
     let mut missing = vec![];
 
-    if channels.get(&config.requests_channel).is_none() {
+    if !channels.contains_key(&config.requests_channel) {
         missing.push("requests_channel");
     }
 
-    if channels.get(&config.ticket_category).is_none() {
+    if !channels.contains_key(&config.ticket_category) {
         missing.push("ticket_category");
     }
 
-    if channels.get(&config.closed_category).is_none() {
+    if !channels.contains_key(&config.closed_category) {
         missing.push("closed_category");
     }
 
-    if channels.get(&config.finished_channel).is_none() {
+    if !channels.contains_key(&config.finished_channel) {
         missing.push("finished_channel");
     }
 
@@ -81,7 +81,7 @@ pub async fn open_requests(ctx: Context<'_>) -> anyhow::Result<()> {
         false,
     )
     .color(0x9b59b6)
-    .footer(CreateEmbedFooter::new("ukubot v0.6.9 (nice)").icon_url(avatar));
+    .footer(CreateEmbedFooter::new("ukubot v7.2.7").icon_url(avatar));
 
     let components = vec![CreateActionRow::Buttons(vec![CreateRequestButton.create()])];
 
