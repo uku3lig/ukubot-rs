@@ -7,6 +7,7 @@ use crate::handler::PersistentButton;
 
 mod misc;
 mod requests;
+mod tag;
 
 pub fn commands() -> Vec<Command<(), anyhow::Error>> {
     vec![
@@ -14,6 +15,7 @@ pub fn commands() -> Vec<Command<(), anyhow::Error>> {
         misc::ratio(),
         misc::config(),
         requests::open::open_requests(),
+        tag::tag(),
     ]
 }
 
