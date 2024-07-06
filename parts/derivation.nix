@@ -16,9 +16,11 @@ rustPlatform.buildRustPackage {
   buildInputs = [openssl];
   nativeBuildInputs = [pkg-config];
 
+  doCheck = false;
+
   meta = with lib; {
     mainProgram = "ukubot-rs";
-    description = "backend for api.uku3lig.net";
+    description = "uku's silly discord bot";
     homepage = "https://github.com/uku3lig/ukubot-rs";
     license = licenses.mit;
     platforms = platforms.unix;

@@ -24,7 +24,7 @@ self: {
 in {
   options.services.ukubot-rs = {
     enable = mkEnableOption "ukubot-rs";
-    package = mkPackageOption self.packages.${system} "ukubot-rs" {};
+    package = mkPackageOption self.packages.${system} "default" {};
     environmentFile = mkOption {
       description = mdDoc ''
         Environment file as defined in {manpage}`systemd.exec(5)`
