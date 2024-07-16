@@ -40,6 +40,7 @@ in {
   config = mkIf cfg.enable {
     services.redis.servers.ukubot = {
       enable = true;
+      user = "ukubot";
       port = 0; # disable tcp
     };
 
@@ -62,8 +63,10 @@ in {
 
         EnvironmentFile = mkIf (cfg.environmentFile != null) cfg.environmentFile;
 
+        User = "ukubot";
+        Group = "ukubot";
+
         # hardening
-        DynamicUser = true;
         PrivateTmp = true;
         NoNewPrivileges = true;
         RestrictNamespaces = "uts ipc pid user cgroup";
@@ -74,6 +77,14 @@ in {
         ProtectControlGroups = true;
         PrivateDevices = true;
         RestrictSUIDSGID = true;
+      };
+    };
+
+    users = {
+      groups.ukubot = {};
+      users.ukubot = {
+        isSystemUser = true;
+        group = "ukubot";
       };
     };
   };
