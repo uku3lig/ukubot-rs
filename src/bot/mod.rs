@@ -36,6 +36,8 @@ pub static BUTTONS: Lazy<HashMap<String, &'static dyn PersistentButton>> = Lazy:
     for button in buttons() {
         if let Some(id) = button_name(&button.create()) {
             map.insert(id, button);
+        } else {
+            tracing::warn!("button has no custom_id: {:?}", button.create());
         }
     }
 
@@ -46,13 +48,7 @@ pub static BUTTONS: Lazy<HashMap<String, &'static dyn PersistentButton>> = Lazy:
 fn button_name(btn: &CreateButton) -> Option<String> {
     let value = serde_json::to_value(btn).ok()?;
 
-    let s = value
-        .as_array()?
-        .first()?
-        .as_object()?
-        .get("custom_id")?
-        .as_str()?
-        .to_owned();
+    let s = value.as_object()?.get("custom_id")?.as_str()?.to_owned();
 
     Some(s)
 }
