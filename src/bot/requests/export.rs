@@ -19,6 +19,7 @@ impl PersistentButton for ExportButton {
     async fn on_press(
         &self,
         ctx: &serenity::Context,
+        _: &crate::config::Storage,
         interaction: &serenity::ComponentInteraction,
     ) -> anyhow::Result<()> {
         let channel = super::get_channel_from_embed(interaction.message.embeds.first().unwrap())?;

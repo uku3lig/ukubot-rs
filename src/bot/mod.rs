@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use poise::{serenity_prelude::CreateButton, Command};
 
-use crate::handler::PersistentButton;
+use crate::{config::Storage, handler::PersistentButton};
 
 mod misc;
 mod requests;
 mod tag;
 
-pub fn commands() -> Vec<Command<(), anyhow::Error>> {
+pub fn commands() -> Vec<Command<Storage, anyhow::Error>> {
     vec![
         misc::echo(),
         misc::ratio(),

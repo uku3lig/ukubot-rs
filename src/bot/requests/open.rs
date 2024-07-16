@@ -6,7 +6,6 @@ use serenity::{
 };
 
 use super::manage;
-use crate::config::GuildConfig;
 use crate::handler::PersistentButton;
 use crate::Context;
 
@@ -17,7 +16,7 @@ pub async fn open_requests(ctx: Context<'_>) -> anyhow::Result<()> {
         .guild_id()
         .ok_or(anyhow!("command must be run in a guild"))?;
 
-    let config = GuildConfig::get(guild);
+    let config = ctx.data().get_config(guild).await?;
     let channels = guild.channels(&ctx).await?;
 
     let mut missing = vec![];
@@ -128,10 +127,11 @@ impl PersistentButton for CreateRequestButton {
     async fn on_press(
         &self,
         ctx: &serenity::Context,
+        data: &crate::config::Storage,
         interaction: &ComponentInteraction,
     ) -> anyhow::Result<()> {
         // unwrapping here is safe because the button will always be in a guild
-        let config = GuildConfig::get(interaction.guild_id.unwrap());
+        let config = data.get_config(interaction.guild_id.unwrap()).await?;
 
         if !config.requests_open {
             interaction

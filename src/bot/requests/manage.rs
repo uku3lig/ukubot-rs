@@ -7,7 +7,6 @@ use serenity::{
 };
 
 use super::ticket;
-use crate::config::GuildConfig;
 use crate::consts;
 use crate::handler::PersistentButton;
 
@@ -24,10 +23,11 @@ impl PersistentButton for AcceptRequestButton {
     async fn on_press(
         &self,
         ctx: &serenity::Context,
+        data: &crate::config::Storage,
         interaction: &ComponentInteraction,
     ) -> anyhow::Result<()> {
         // unwrapping here is safe because the button will always be in a guild
-        let config = GuildConfig::get(interaction.guild_id.unwrap());
+        let config = data.get_config(interaction.guild_id.unwrap()).await?;
 
         let embed: CreateEmbed = interaction.message.embeds.first().unwrap().clone().into();
         let embed = embed
@@ -114,6 +114,7 @@ impl PersistentButton for RejectRequestButton {
     async fn on_press(
         &self,
         ctx: &serenity::Context,
+        _: &crate::config::Storage,
         interaction: &ComponentInteraction,
     ) -> anyhow::Result<()> {
         let info: RejectModal = poise::modal::execute_modal_on_component_interaction(

@@ -6,7 +6,7 @@ use serenity::{
 };
 
 use super::export;
-use crate::{config::GuildConfig, consts, handler::PersistentButton};
+use crate::{consts, handler::PersistentButton};
 
 pub struct FinishRequestButton;
 
@@ -30,10 +30,12 @@ impl PersistentButton for FinishRequestButton {
     async fn on_press(
         &self,
         ctx: &serenity::Context,
+        data: &crate::config::Storage,
         interaction: &serenity::ComponentInteraction,
     ) -> anyhow::Result<()> {
         let embed = close_request(
             ctx,
+            data,
             interaction,
             "Request finished.",
             |e, m: FinishModal| {
@@ -45,7 +47,7 @@ impl PersistentButton for FinishRequestButton {
         )
         .await?;
 
-        let config = GuildConfig::get(interaction.guild_id.unwrap());
+        let config = data.get_config(interaction.guild_id.unwrap()).await?;
         config
             .finished_channel
             .send_message(ctx, CreateMessage::new().embed(embed))
@@ -76,10 +78,12 @@ impl PersistentButton for DiscontinueRequestButton {
     async fn on_press(
         &self,
         ctx: &serenity::Context,
+        data: &crate::config::Storage,
         interaction: &serenity::ComponentInteraction,
     ) -> anyhow::Result<()> {
         let _ = close_request(
             ctx,
+            data,
             interaction,
             "Request discontinued.",
             |e, m: DiscontinueModal| {
@@ -96,11 +100,12 @@ impl PersistentButton for DiscontinueRequestButton {
 
 async fn close_request<M: Modal, S: ToString>(
     ctx: &serenity::Context,
+    data: &crate::config::Storage,
     interaction: &serenity::ComponentInteraction,
     action: S,
     embed_builder: impl FnOnce(CreateEmbed, M) -> CreateEmbed,
 ) -> anyhow::Result<CreateEmbed> {
-    let config = GuildConfig::get(interaction.guild_id.unwrap());
+    let config = data.get_config(interaction.guild_id.unwrap()).await?;
 
     let info: M = poise::modal::execute_modal_on_component_interaction(
         Box::new(ctx.clone()),

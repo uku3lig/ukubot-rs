@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-
 use anyhow::Result;
 use poise::serenity_prelude as serenity;
+use redis::{AsyncCommands, Client, ConnectionLike};
+use redis_macros::{FromRedisValue, ToRedisArgs};
 use serde::{Deserialize, Serialize};
 use serenity::model::id::{ChannelId, GuildId, RoleId};
 
-pub const CONFIG_FILE: &str = "ukubot_config.toml";
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, FromRedisValue, ToRedisArgs)]
 #[serde(default)]
 pub struct GuildConfig {
     pub requests_open: bool,
@@ -18,31 +16,39 @@ pub struct GuildConfig {
     pub autoban_role: RoleId,
 }
 
-impl GuildConfig {
-    fn read() -> Result<HashMap<GuildId, GuildConfig>> {
-        let conf = match std::fs::read_to_string(CONFIG_FILE) {
-            Ok(c) => c,
-            Err(e) => {
-                tracing::warn!("Could not read config file: {:?}", e);
-                anyhow::bail!(e);
-            }
-        };
+pub struct Storage {
+    redis: Client,
+}
 
-        Ok(toml::from_str(&conf)?)
+impl Storage {
+    pub fn from_env() -> Result<Self> {
+        let url = std::env::var("REDIS_URL")?;
+        let mut redis = Client::open(url.clone())?;
+
+        if !redis.check_connection() {
+            anyhow::bail!("failed to connect to redis at {url}");
+        } else {
+            tracing::info!("successfully connected to redis at {url}");
+        }
+
+        Ok(Self { redis })
     }
 
-    pub fn get<T: Into<GuildId>>(id: T) -> Self {
-        let conf = GuildConfig::read().unwrap_or_default();
+    pub async fn get_config(&self, id: GuildId) -> Result<GuildConfig> {
+        let mut con = self.redis.get_multiplexed_async_connection().await?;
+        let config: GuildConfig = con.get(u64::from(id)).await.unwrap_or_default();
 
-        conf.get(&id.into()).cloned().unwrap_or_default()
+        tracing::debug!("successfully fetched config for guild {id}");
+
+        Ok(config)
     }
 
-    pub fn save<T: Into<GuildId>>(&self, id: T) -> Result<()> {
-        let mut conf = GuildConfig::read().unwrap_or_default();
-        conf.insert(id.into(), self.clone());
+    pub async fn save_config(&self, id: GuildId, config: GuildConfig) -> Result<()> {
+        let mut con = self.redis.get_multiplexed_async_connection().await?;
+        con.set(u64::from(id), config).await?;
 
-        let conf = toml::to_string(&conf)?;
-        std::fs::write(CONFIG_FILE, conf)?;
+        tracing::debug!("successfully saved config for guild {id}");
+
         Ok(())
     }
 }

@@ -6,13 +6,13 @@ use serenity::{
     FullEvent, GuildMemberUpdateEvent, Interaction, Message, ReactionType,
 };
 
-use crate::config::GuildConfig;
+use crate::config::Storage;
 
 pub async fn handle(
     ctx: &serenity::Context,
     event: &FullEvent,
-    _framework: poise::FrameworkContext<'_, (), anyhow::Error>,
-    _: &(),
+    _framework: poise::FrameworkContext<'_, Storage, anyhow::Error>,
+    storage: &Storage,
 ) -> Result<()> {
     match event {
         FullEvent::Ready { data_about_bot } => {
@@ -24,13 +24,13 @@ pub async fn handle(
         }
 
         FullEvent::GuildMemberUpdate { event, .. } => {
-            member_update(ctx, event).await?;
+            member_update(ctx, storage, event).await?;
         }
 
         FullEvent::InteractionCreate {
             interaction: Interaction::Component(interaction),
         } => {
-            button_press(ctx, interaction).await?;
+            button_press(ctx, storage, interaction).await?;
         }
 
         _ => {}
@@ -71,8 +71,12 @@ async fn message(ctx: &Context, message: &Message) -> Result<()> {
     Ok(())
 }
 
-async fn member_update(ctx: &Context, event: &GuildMemberUpdateEvent) -> Result<()> {
-    let config = GuildConfig::get(event.guild_id);
+async fn member_update(
+    ctx: &Context,
+    storage: &Storage,
+    event: &GuildMemberUpdateEvent,
+) -> Result<()> {
+    let config = storage.get_config(event.guild_id).await?;
 
     if event.roles.contains(&config.autoban_role) {
         event
@@ -91,10 +95,14 @@ async fn member_update(ctx: &Context, event: &GuildMemberUpdateEvent) -> Result<
     Ok(())
 }
 
-async fn button_press(ctx: &Context, interaction: &ComponentInteraction) -> Result<()> {
+async fn button_press(
+    ctx: &Context,
+    storage: &Storage,
+    interaction: &ComponentInteraction,
+) -> Result<()> {
     for (custom_id, button) in crate::bot::BUTTONS.iter() {
         if interaction.data.custom_id == *custom_id {
-            if let Err(e) = button.on_press(ctx, interaction).await {
+            if let Err(e) = button.on_press(ctx, storage, interaction).await {
                 tracing::error!("error handling '{}' button press: {}", custom_id, e);
 
                 interaction
@@ -119,6 +127,7 @@ pub trait PersistentButton: Send + Sync {
     async fn on_press(
         &self,
         ctx: &Context,
+        data: &Storage,
         interaction: &ComponentInteraction,
     ) -> anyhow::Result<()>;
 }

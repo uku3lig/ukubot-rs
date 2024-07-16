@@ -38,14 +38,23 @@ in {
   };
 
   config = mkIf cfg.enable {
+    services.redis.servers.ukubot = {
+      enable = true;
+      port = 0; # disable tcp
+    };
+
     systemd.services."ukubot-rs" = {
       enable = true;
       wantedBy = mkDefault ["multi-user.target"];
       wants = mkDefault ["network-online.target"];
-      after = mkDefault ["network.target" "network-online.target"];
+      after = mkDefault ["network.target" "network-online.target" "redis-ukubot.service"];
       script = ''
         ${getExe cfg.package}
       '';
+
+      environment = {
+        REDIS_URL = "unix:${config.services.redis.servers.ukubot.unixSocket}";
+      };
 
       serviceConfig = {
         Type = "simple";

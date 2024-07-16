@@ -1,6 +1,7 @@
 use std::env;
 
 use anyhow::Result;
+use config::Storage;
 use poise::{
     serenity_prelude as serenity, CreateReply, Framework, FrameworkError, FrameworkOptions,
 };
@@ -11,25 +12,27 @@ mod config;
 mod consts;
 mod handler;
 
-type Context<'a> = poise::Context<'a, (), anyhow::Error>;
+type Context<'a> = poise::Context<'a, Storage, anyhow::Error>;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     if let Err(e) = dotenvy::dotenv() {
         eprintln!("an error occurred while loading .env: {e:?}");
     }
 
     tracing_subscriber::fmt::init();
 
+    let options = FrameworkOptions {
+        commands: bot::commands(),
+        event_handler: |ctx, event, framework, data| {
+            Box::pin(handler::handle(ctx, event, framework, data))
+        },
+        on_error: |e| Box::pin(on_error(e)),
+        ..Default::default()
+    };
+
     let framework = poise::Framework::builder()
-        .options(FrameworkOptions {
-            commands: bot::commands(),
-            event_handler: |ctx, event, framework, data| {
-                Box::pin(handler::handle(ctx, event, framework, data))
-            },
-            on_error: |e| Box::pin(on_error(e)),
-            ..Default::default()
-        })
+        .options(options)
         .setup(|ctx, _ready, framework| Box::pin(setup(ctx, framework)))
         .build();
 
@@ -40,8 +43,7 @@ async fn main() {
             | GatewayIntents::GUILD_MEMBERS,
     )
     .framework(framework)
-    .await
-    .unwrap();
+    .await?;
 
     let manager = client.shard_manager.clone();
 
@@ -56,9 +58,16 @@ async fn main() {
     if let Err(e) = client.start().await {
         tracing::error!("an error occurred while running the client: {e:?}");
     }
+
+    Ok(())
 }
 
-async fn setup(ctx: &serenity::Context, framework: &Framework<(), anyhow::Error>) -> Result<()> {
+async fn setup(
+    ctx: &serenity::Context,
+    framework: &Framework<Storage, anyhow::Error>,
+) -> Result<Storage> {
+    let storage = config::Storage::from_env()?;
+
     let commands = &framework.options().commands;
 
     if let Ok(g) = env_guild_id() {
@@ -69,10 +78,10 @@ async fn setup(ctx: &serenity::Context, framework: &Framework<(), anyhow::Error>
         tracing::info!("registered {} commands globally", commands.len());
     }
 
-    Ok(())
+    Ok(storage)
 }
 
-async fn on_error(error: FrameworkError<'_, (), anyhow::Error>) {
+async fn on_error(error: FrameworkError<'_, Storage, anyhow::Error>) {
     match error {
         FrameworkError::Setup { error, .. } => {
             panic!("failed to start bot: {}", error);

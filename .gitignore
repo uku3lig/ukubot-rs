@@ -6,6 +6,7 @@
 /target
 
 .env
+dump.rdb
 ukubot_config.toml
 
 .direnv/
