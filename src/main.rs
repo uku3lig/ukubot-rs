@@ -6,6 +6,10 @@ use poise::{
     serenity_prelude as serenity, CreateReply, Framework, FrameworkError, FrameworkOptions,
 };
 use serenity::{ClientBuilder, GatewayIntents};
+use tokio::signal::{
+    ctrl_c,
+    unix::{signal, SignalKind},
+};
 
 mod bot;
 mod config;
@@ -47,19 +51,21 @@ async fn main() -> anyhow::Result<()> {
 
     let manager = client.shard_manager.clone();
 
-    tokio::spawn(async move {
-        tokio::signal::ctrl_c()
-            .await
-            .expect("Could not register ctrl+c handler");
+    let mut sigterm = signal(SignalKind::terminate())?;
 
-        manager.shutdown_all().await;
-    });
-
-    if let Err(e) = client.start().await {
-        tracing::error!("an error occurred while running the client: {e:?}");
+    // waits for one of the futures to complete
+    tokio::select! {
+        result = client.start() => result.map_err(anyhow::Error::from),
+        _ = sigterm.recv() => {
+            manager.shutdown_all().await;
+            std::process::exit(0);
+        }
+        _ = ctrl_c() => {
+            tracing::warn!("received SIGINT, shutting down...");
+            manager.shutdown_all().await;
+            std::process::exit(130);
+        }
     }
-
-    Ok(())
 }
 
 async fn setup(
