@@ -16,7 +16,7 @@ type Context<'a> = poise::Context<'a, (), anyhow::Error>;
 #[tokio::main]
 async fn main() {
     if let Err(e) = dotenvy::dotenv() {
-        eprintln!("an error occurred while loading .env: {:?}", e);
+        eprintln!("an error occurred while loading .env: {e:?}");
     }
 
     tracing_subscriber::fmt::init();
@@ -35,7 +35,9 @@ async fn main() {
 
     let mut client = ClientBuilder::new(
         env::var("UKUBOT_TOKEN").expect("missing UKUBOT_TOKEN"),
-        GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT,
+        GatewayIntents::non_privileged()
+            | GatewayIntents::MESSAGE_CONTENT
+            | GatewayIntents::GUILD_MEMBERS,
     )
     .framework(framework)
     .await
@@ -52,7 +54,7 @@ async fn main() {
     });
 
     if let Err(e) = client.start().await {
-        tracing::error!("an error occurred while running the client: {:?}", e);
+        tracing::error!("an error occurred while running the client: {e:?}");
     }
 }
 

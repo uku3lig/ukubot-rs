@@ -60,6 +60,8 @@ pub async fn config(
     #[description = "the text channel where finished tickets are sent"]
     #[channel_types("Text")]
     finished_channel: Option<serenity::GuildChannel>,
+    #[description = "the role that automatically bans those who have it"] //
+    autoban_role: Option<serenity::Role>,
 ) -> Result<()> {
     let guild_id = ctx
         .guild_id()
@@ -85,6 +87,10 @@ pub async fn config(
 
     if let Some(finished_channel) = finished_channel {
         config.finished_channel = finished_channel.id;
+    }
+
+    if let Some(autoban_role) = autoban_role {
+        config.autoban_role = autoban_role.id;
     }
 
     config.save(guild_id)?;

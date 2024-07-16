@@ -3,8 +3,10 @@ use chrono::Datelike;
 use poise::serenity_prelude as serenity;
 use serenity::{
     ComponentInteraction, Context, CreateButton, CreateInteractionResponseFollowup, EmojiId,
-    FullEvent, Interaction, Message, ReactionType,
+    FullEvent, GuildMemberUpdateEvent, Interaction, Message, ReactionType,
 };
+
+use crate::config::GuildConfig;
 
 pub async fn handle(
     ctx: &serenity::Context,
@@ -19,6 +21,10 @@ pub async fn handle(
 
         FullEvent::Message { new_message } => {
             message(ctx, new_message).await?;
+        }
+
+        FullEvent::GuildMemberUpdate { event, .. } => {
+            member_update(ctx, event).await?;
         }
 
         FullEvent::InteractionCreate {
@@ -60,6 +66,26 @@ async fn message(ctx: &Context, message: &Message) -> Result<()> {
         message
             .reply(&ctx.http, "<:gayge:1113614420715765881>")
             .await?;
+    }
+
+    Ok(())
+}
+
+async fn member_update(ctx: &Context, event: &GuildMemberUpdateEvent) -> Result<()> {
+    let config = GuildConfig::get(event.guild_id);
+
+    if event.roles.contains(&config.autoban_role) {
+        event
+            .guild_id
+            .ban_with_reason(ctx, &event.user, 1, "autobanned for having role")
+            .await?;
+
+        tracing::info!(
+            "automatically banned user {} ({}) for having autoban role in guild {}",
+            event.user.name,
+            event.user.id,
+            event.guild_id
+        );
     }
 
     Ok(())

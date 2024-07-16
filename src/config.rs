@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use poise::serenity_prelude as serenity;
 use serde::{Deserialize, Serialize};
-use serenity::model::id::{ChannelId, GuildId};
+use serenity::model::id::{ChannelId, GuildId, RoleId};
 
 pub const CONFIG_FILE: &str = "ukubot_config.toml";
 
@@ -15,6 +15,7 @@ pub struct GuildConfig {
     pub ticket_category: ChannelId,
     pub closed_category: ChannelId,
     pub finished_channel: ChannelId,
+    pub autoban_role: RoleId,
 }
 
 impl GuildConfig {
