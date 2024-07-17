@@ -14,8 +14,6 @@ fn get_user_from_embed(embed: &serenity::CreateEmbed) -> Option<serenity::UserId
     let value = serde_json::to_value(embed).ok()?;
 
     let id = value
-        .as_array()?
-        .first()?
         .as_object()?
         .get("footer")?
         .as_object()?

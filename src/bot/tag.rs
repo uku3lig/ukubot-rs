@@ -27,7 +27,7 @@ impl Tags {
         match self {
             Self::UkuButton => builder.content("https://media.discordapp.net/attachments/1049703332043837460/1049705678194876446/image.png"),
             Self::Payment => builder.content(indoc! {"
-                * [PayPal](<https://paypal.me/uku3lig>) *(preferred)*
+                * [PayPal](<https://paypal.me/uku4lig>) *(preferred)*
                 * [GitHub Sponsors](<https://github.com/sponsors/uku3lig>)
                 * [Ko-Fi](<https://ko-fi.com/uku3lig>)
             "}),
