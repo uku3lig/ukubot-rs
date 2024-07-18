@@ -26,6 +26,8 @@ impl PersistentButton for AcceptRequestButton {
         data: &crate::config::Storage,
         interaction: &ComponentInteraction,
     ) -> anyhow::Result<()> {
+        interaction.defer(ctx).await?;
+
         // unwrapping here is safe because the button will always be in a guild
         let config = data.get_config(interaction.guild_id.unwrap()).await?;
 
