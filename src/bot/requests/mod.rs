@@ -52,3 +52,19 @@ async fn dm_embed_to_user(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod test {
+    use poise::serenity_prelude as serenity;
+
+    #[test]
+    fn test_user_from_embed() {
+        let user = serenity::UserId::from(319463560356823050);
+        let id_str = format!("{}", u64::from(user));
+
+        let embed = serenity::CreateEmbed::new().footer(serenity::CreateEmbedFooter::new(id_str));
+        let computed_user = super::get_user_from_embed(&embed);
+
+        assert_eq!(computed_user, Some(user));
+    }
+}

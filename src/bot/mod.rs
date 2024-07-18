@@ -52,3 +52,18 @@ fn button_name(btn: &CreateButton) -> Option<String> {
 
     Some(s)
 }
+
+#[cfg(test)]
+mod test {
+    use poise::serenity_prelude as serenity;
+
+    #[test]
+    fn test_button_name() {
+        const CUSTOM_ID: &str = "some_very_long_custom_id_colon_three";
+
+        let button =
+            serenity::CreateButton::new(CUSTOM_ID).label("something completely different!");
+
+        assert_eq!(super::button_name(&button), Some(CUSTOM_ID.to_owned()));
+    }
+}

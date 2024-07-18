@@ -11,8 +11,6 @@ rustPlatform.buildRustPackage {
 
   src = self;
 
-  doCheck = false;
-
   meta = with lib; {
     mainProgram = "ukubot-rs";
     description = "uku's silly discord bot";
