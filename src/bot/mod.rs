@@ -1,6 +1,5 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::LazyLock};
 
-use once_cell::sync::Lazy;
 use poise::{serenity_prelude::CreateButton, Command};
 
 use crate::{config::Storage, handler::PersistentButton};
@@ -30,19 +29,20 @@ fn buttons() -> Vec<&'static dyn PersistentButton> {
     ]
 }
 
-pub static BUTTONS: Lazy<HashMap<String, &'static dyn PersistentButton>> = Lazy::new(|| {
-    let mut map = HashMap::new();
+pub static BUTTONS: LazyLock<HashMap<String, &'static dyn PersistentButton>> =
+    LazyLock::new(|| {
+        let mut map = HashMap::new();
 
-    for button in buttons() {
-        if let Some(id) = button_name(&button.create()) {
-            map.insert(id, button);
-        } else {
-            tracing::warn!("button has no custom_id: {:?}", button.create());
+        for button in buttons() {
+            if let Some(id) = button_name(&button.create()) {
+                map.insert(id, button);
+            } else {
+                tracing::warn!("button has no custom_id: {:?}", button.create());
+            }
         }
-    }
 
-    map
-});
+        map
+    });
 
 // i strongly hate this. but there's not much else i can do sadly
 fn button_name(btn: &CreateButton) -> Option<String> {
