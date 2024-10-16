@@ -45,7 +45,9 @@ impl Storage {
 
     pub async fn save_config(&self, id: GuildId, config: GuildConfig) -> Result<()> {
         let mut con = self.redis.get_multiplexed_async_connection().await?;
-        con.set(u64::from(id), config).await?;
+        // we explicitly set the return type to () to avoid issues with rust 2024
+        // see https://github.com/rust-lang/rust/issues/123748
+        con.set::<_, _, ()>(u64::from(id), config).await?;
 
         tracing::debug!("successfully saved config for guild {id}");
 
