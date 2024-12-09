@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 poise = "0.6.1"
-tokio = { version = "1.41.1", features = [
+tokio = { version = "1.42.0", features = [
     "macros",
     "rt-multi-thread",
     "signal",
