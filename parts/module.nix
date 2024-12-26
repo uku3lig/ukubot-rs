@@ -1,16 +1,17 @@
 # thanks getchoo :3
-self: {
+self:
+{
   config,
   lib,
   pkgs,
   ...
-}: let
+}:
+let
   cfg = config.services.ukubot-rs;
 
   inherit (pkgs.stdenv.hostPlatform) system;
 
-  inherit
-    (lib)
+  inherit (lib)
     getExe
     literalExpression
     mdDoc
@@ -21,10 +22,11 @@ self: {
     mkPackageOption
     types
     ;
-in {
+in
+{
   options.services.ukubot-rs = {
     enable = mkEnableOption "ukubot-rs";
-    package = mkPackageOption self.packages.${system} "default" {};
+    package = mkPackageOption self.packages.${system} "default" { };
     environmentFile = mkOption {
       description = mdDoc ''
         Environment file as defined in {manpage}`systemd.exec(5)`
@@ -46,9 +48,13 @@ in {
 
     systemd.services."ukubot-rs" = {
       enable = true;
-      wantedBy = mkDefault ["multi-user.target"];
-      wants = mkDefault ["network-online.target"];
-      after = mkDefault ["network.target" "network-online.target" "redis-ukubot.service"];
+      wantedBy = mkDefault [ "multi-user.target" ];
+      wants = mkDefault [ "network-online.target" ];
+      after = mkDefault [
+        "network.target"
+        "network-online.target"
+        "redis-ukubot.service"
+      ];
       script = ''
         ${getExe cfg.package}
       '';
@@ -81,7 +87,7 @@ in {
     };
 
     users = {
-      groups.ukubot = {};
+      groups.ukubot = { };
       users.ukubot = {
         isSystemUser = true;
         group = "ukubot";

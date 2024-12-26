@@ -14,7 +14,7 @@ rustPlatform.buildRustPackage {
 
   src = self;
 
-  nativeBuildInputs = [mold-wrapped];
+  nativeBuildInputs = [ mold-wrapped ];
 
   cargoLock.lockFile = ../Cargo.lock;
 
