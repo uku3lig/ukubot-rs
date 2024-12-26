@@ -6,8 +6,7 @@ use serenity::{
 };
 
 use super::manage;
-use crate::handler::PersistentButton;
-use crate::Context;
+use crate::{handler::PersistentButton, Context};
 
 /// opens the server for requests in the current channel
 #[poise::command(slash_command, guild_only, required_permissions = "ADMINISTRATOR")]

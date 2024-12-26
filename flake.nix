@@ -38,7 +38,7 @@
             mkShell {
               packages = [
                 clippy
-                rustfmt
+                (rustfmt.override { asNightly = true; })
                 rust-analyzer
                 redis
               ];

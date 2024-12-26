@@ -7,8 +7,7 @@ use serenity::{
 };
 
 use super::ticket;
-use crate::consts;
-use crate::handler::PersistentButton;
+use crate::{consts, handler::PersistentButton};
 
 pub struct AcceptRequestButton;
 
