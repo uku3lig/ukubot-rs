@@ -17,7 +17,7 @@ anyhow = "1.0"
 chrono = "0.4.39"
 dotenvy = "0.15.7"
 indoc = "2.0.5"
-rand = "0.8.5"
+rand = "0.9.0"
 redis = { version = "0.28.2", features = ["tokio-comp"] }
 redis-macros = "0.5.0"
 serde = { version = "1.0", features = ["derive"] }
