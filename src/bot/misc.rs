@@ -2,7 +2,7 @@ use std::sync::LazyLock;
 
 use anyhow::{anyhow, Result};
 use poise::{serenity_prelude as serenity, CreateReply};
-use rand::seq::SliceRandom;
+use rand::seq::IndexedRandom;
 use serenity::{CreateAllowedMentions, CreateMessage};
 
 use crate::Context;
@@ -16,7 +16,7 @@ static RATIO: LazyLock<Vec<String>> = LazyLock::new(|| {
 #[poise::command(slash_command)]
 pub async fn ratio(ctx: Context<'_>) -> Result<()> {
     let ratio = RATIO
-        .choose_multiple(&mut rand::thread_rng(), 20)
+        .choose_multiple(&mut rand::rng(), 20)
         .cloned()
         .collect::<Vec<_>>()
         .join(" + ");
