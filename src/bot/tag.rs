@@ -1,6 +1,6 @@
 use anyhow::Result;
 use indoc::indoc;
-use poise::{serenity_prelude as serenity, CreateReply};
+use poise::{CreateReply, serenity_prelude as serenity};
 use serenity::CreateAllowedMentions;
 
 use crate::Context;

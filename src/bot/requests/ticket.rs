@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use poise::{serenity_prelude as serenity, Modal};
+use poise::{Modal, serenity_prelude as serenity};
 use serenity::{
     CreateActionRow, CreateEmbed, CreateInteractionResponseFollowup, CreateMessage, EditChannel,
     EditInteractionResponse,
@@ -142,7 +142,7 @@ async fn close_request<M: Modal, S: ToString>(
             EditInteractionResponse::new()
                 .embed(embed.clone())
                 .components(vec![CreateActionRow::Buttons(vec![
-                    export::ExportButton.create()
+                    export::ExportButton.create(),
                 ])]),
         )
         .await?;

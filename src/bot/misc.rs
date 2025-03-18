@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
-use anyhow::{anyhow, Result};
-use poise::{serenity_prelude as serenity, CreateReply};
+use anyhow::{Result, anyhow};
+use poise::{CreateReply, serenity_prelude as serenity};
 use rand::seq::IndexedRandom;
 use serenity::{CreateAllowedMentions, CreateMessage};
 

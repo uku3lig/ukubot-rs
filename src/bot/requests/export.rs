@@ -1,7 +1,7 @@
 use poise::serenity_prelude as serenity;
 use serenity::{
-    futures::StreamExt, CreateAttachment, CreateInteractionResponse,
-    CreateInteractionResponseMessage, CreateMessage, EditMessage,
+    CreateAttachment, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage,
+    EditMessage, futures::StreamExt,
 };
 
 use crate::handler::PersistentButton;

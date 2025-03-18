@@ -3,12 +3,12 @@ use std::env;
 use anyhow::Result;
 use config::Storage;
 use poise::{
-    serenity_prelude as serenity, CreateReply, Framework, FrameworkError, FrameworkOptions,
+    CreateReply, Framework, FrameworkError, FrameworkOptions, serenity_prelude as serenity,
 };
 use serenity::{ClientBuilder, GatewayIntents};
 use tokio::signal::{
     ctrl_c,
-    unix::{signal, SignalKind},
+    unix::{SignalKind, signal},
 };
 
 mod bot;

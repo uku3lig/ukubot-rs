@@ -1,12 +1,12 @@
 use anyhow::anyhow;
-use poise::{serenity_prelude as serenity, CreateReply, Modal};
+use poise::{CreateReply, Modal, serenity_prelude as serenity};
 use serenity::{
     ComponentInteraction, CreateActionRow, CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter,
     CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, Timestamp,
 };
 
 use super::manage;
-use crate::{handler::PersistentButton, Context};
+use crate::{Context, handler::PersistentButton};
 
 /// opens the server for requests in the current channel
 #[poise::command(slash_command, guild_only, required_permissions = "ADMINISTRATOR")]

@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use poise::{serenity_prelude as serenity, Modal};
+use poise::{Modal, serenity_prelude as serenity};
 use serenity::{
     ComponentInteraction, CreateActionRow, CreateChannel, CreateEmbed,
     CreateInteractionResponseFollowup, CreateMessage, EditInteractionResponse, Mentionable,

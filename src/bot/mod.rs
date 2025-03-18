@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::LazyLock};
 
-use poise::{serenity_prelude::CreateButton, Command};
+use poise::{Command, serenity_prelude::CreateButton};
 
 use crate::{config::Storage, handler::PersistentButton};
 
