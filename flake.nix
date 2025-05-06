@@ -40,7 +40,7 @@
                 clippy
                 (rustfmt.override { asNightly = true; })
                 rust-analyzer
-                redis
+                valkey
               ];
 
               inputsFrom = [ self'.packages.default ];
