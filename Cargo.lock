@@ -1098,9 +1098,9 @@ dependencies = [
 
 [[package]]
 name = "redis"
-version = "0.29.5"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bc42f3a12fd4408ce64d8efef67048a924e543bd35c6591c0447fda9054695f"
+checksum = "438a4e5f8e9aa246d6f3666d6978441bf1b37d5f417b50c4dd220be09f5fcc17"
 dependencies = [
  "arc-swap",
  "combine",
@@ -1137,11 +1137,11 @@ dependencies = [
 
 [[package]]
 name = "redis-macros"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0887a0ff58093e610a414c44101707382a559a7aff3edd2d2d2a514d6c4db00f"
+checksum = "24f7a71063de53b8775b2a7be6f1fa72c373bb41391173fe63b1e382f9f9ef90"
 dependencies = [
- "redis 0.29.5",
+ "redis 0.30.0",
  "redis-macros-derive",
  "serde",
  "serde_json",
