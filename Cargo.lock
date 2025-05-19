@@ -48,12 +48,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
 
 [[package]]
-name = "arc-swap"
-version = "1.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69f7f8c3906b62b754cd5326047894316021dcfe5a194c8ea52bdd94934a3457"
-
-[[package]]
 name = "arrayvec"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1098,23 +1092,6 @@ dependencies = [
 
 [[package]]
 name = "redis"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "438a4e5f8e9aa246d6f3666d6978441bf1b37d5f417b50c4dd220be09f5fcc17"
-dependencies = [
- "arc-swap",
- "combine",
- "itoa",
- "num-bigint",
- "percent-encoding",
- "ryu",
- "sha1_smol",
- "socket2 0.5.5",
- "url",
-]
-
-[[package]]
-name = "redis"
 version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bc1ea653e0b2e097db3ebb5b7f678be339620b8041f66b30a308c1d45d36a7f"
@@ -1137,11 +1114,11 @@ dependencies = [
 
 [[package]]
 name = "redis-macros"
-version = "0.5.3"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24f7a71063de53b8775b2a7be6f1fa72c373bb41391173fe63b1e382f9f9ef90"
+checksum = "35ccf385c8643426649ed7de6ce3ee094a0c3bd772893aa446674496312546d0"
 dependencies = [
- "redis 0.30.0",
+ "redis",
  "redis-macros-derive",
  "serde",
  "serde_json",
@@ -1928,7 +1905,7 @@ dependencies = [
  "indoc",
  "poise",
  "rand 0.9.1",
- "redis 0.31.0",
+ "redis",
  "redis-macros",
  "serde",
  "serde_json",
