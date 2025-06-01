@@ -46,12 +46,6 @@ async fn message(ctx: &Context, message: &Message) -> Result<()> {
 
     let content = message.content.to_lowercase();
 
-    if content.contains("kiyohime") {
-        message
-            .reply(&ctx.http, "<:kiyobean:739895868215263232>")
-            .await?;
-    }
-
     if content.contains("uku3lig") {
         let reaction = ReactionType::Custom {
             animated: false,
