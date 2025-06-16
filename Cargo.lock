@@ -1092,22 +1092,6 @@ dependencies = [
 
 [[package]]
 name = "redis"
-version = "0.31.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bc1ea653e0b2e097db3ebb5b7f678be339620b8041f66b30a308c1d45d36a7f"
-dependencies = [
- "combine",
- "itoa",
- "num-bigint",
- "percent-encoding",
- "ryu",
- "sha1_smol",
- "socket2 0.5.5",
- "url",
-]
-
-[[package]]
-name = "redis"
 version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd673deb3d184140109c1e27b043c2354cb79399c3ef304c365fc628092ed773"
@@ -1130,11 +1114,11 @@ dependencies = [
 
 [[package]]
 name = "redis-macros"
-version = "0.5.4"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35ccf385c8643426649ed7de6ce3ee094a0c3bd772893aa446674496312546d0"
+checksum = "fc92242f0a306754b0e0f08e2edb04dff85a3040d8d7ee3af74eb94e1fd19304"
 dependencies = [
- "redis 0.31.0",
+ "redis",
  "redis-macros-derive",
  "serde",
  "serde_json",
@@ -1921,7 +1905,7 @@ dependencies = [
  "indoc",
  "poise",
  "rand 0.9.1",
- "redis 0.32.0",
+ "redis",
  "redis-macros",
  "serde",
  "serde_json",
